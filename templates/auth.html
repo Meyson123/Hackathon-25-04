@@ -12,31 +12,8 @@
 
     <div class="auth-container">
 
-        <!-- ===== STEP 1: ROLE SELECTION ===== -->
-        <div class="auth-card" id="roleStep">
-            <div class="role-selection">
-                <h2>Добро пожаловать</h2>
-                <p>Выберите роль, в которой хотите зарегистрироваться. Регистрация потребует подтверждения администратором.</p>
-                <div class="role-cards">
-                    <div class="role-card" data-role="smm">
-                        <i class="bx bx-edit"></i>
-                        <h3>СММ</h3>
-                        <p>Управление контентом и публикациями</p>
-                    </div>
-                    <div class="role-card" data-role="volunteer">
-                        <i class="bx bx-heart"></i>
-                        <h3>Волонтёр</h3>
-                        <p>Участие в мероприятиях и помощь</p>
-                    </div>
-                </div>
-                <div class="auth-footer">
-                    <p>Уже есть аккаунт? <a href="#" id="goToLogin">Войти</a></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== STEP 2: LOGIN FORM ===== -->
-        <div class="auth-card" id="loginStep" style="display:none;">
+        <!-- ===== LOGIN FORM ===== -->
+        <div class="auth-card" id="loginStep">
             <h1>Войти</h1>
             <p class="auth-subtitle">Введите данные для входа в систему</p>
 
@@ -65,7 +42,65 @@
             </form>
 
             <div class="auth-footer">
-                <p>Нет аккаунта? <a href="/auth" id="goToRole">Зарегистрироваться</a></p>
+                <p>Нет аккаунта? <a href="#" id="goToReg">Зарегистрироваться</a></p>
+            </div>
+        </div>
+
+        <!-- ===== REGISTRATION FORM ===== -->
+        <div class="auth-card" id="regStep" style="display:none;">
+            <h1>Регистрация</h1>
+
+            <!-- Выбор роли -->
+            <div class="role-buttons">
+                <button type="button" class="role-btn" data-role="smm">
+                    <i class="bx bx-edit"></i>
+                    <span>СММ</span>
+                </button>
+                <button type="button" class="role-btn" data-role="volunteer">
+                    <i class="bx bx-heart"></i>
+                    <span>Волонтёр</span>
+                </button>
+            </div>
+
+            <p class="auth-subtitle">
+                Роль: <strong id="regRoleLabel">Не выбрана</strong>
+            </p>
+            <p class="auth-subtitle" style="margin-top:4px; font-size:.85rem; opacity:.7;">
+                После регистрации потребуется подтверждение администратором.
+            </p>
+
+            <form id="regForm" novalidate>
+                <input type="hidden" id="regRole" name="role" value="">
+
+                <div class="auth-input-group" id="regNameGroup">
+                    <input type="text" id="regName" placeholder="Имя пользователя" autocomplete="username" required>
+                    <i class="bx bxs-user"></i>
+                </div>
+                <div class="auth-error" id="regNameError"></div>
+
+                <div class="auth-input-group" id="regEmailGroup">
+                    <input type="email" id="regEmail" placeholder="Email" autocomplete="email" required>
+                    <i class="bx bxs-envelope"></i>
+                </div>
+                <div class="auth-error" id="regEmailError"></div>
+
+                <div class="auth-input-group" id="regPasswordGroup">
+                    <input type="password" id="regPassword" placeholder="Пароль" autocomplete="new-password" required>
+                    <i class="bx bxs-lock-alt"></i>
+                </div>
+                <div class="auth-error" id="regPasswordError"></div>
+
+                <div class="auth-input-group" id="regPassword2Group">
+                    <input type="password" id="regPassword2" placeholder="Подтвердите пароль" autocomplete="new-password" required>
+                    <i class="bx bxs-lock"></i>
+                </div>
+                <div class="auth-error" id="regPassword2Error"></div>
+
+                <button type="submit" class="auth-btn" id="regBtn">Зарегистрироваться</button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Уже есть аккаунт? <a href="#" id="goToLogin">Войти</a></p>
             </div>
         </div>
 
