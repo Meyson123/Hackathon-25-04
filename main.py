@@ -33,13 +33,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/files", StaticFiles(directory="files"), name="files")
 
 # Подключение роутеров
-from routes import home, reg, auth, lc, posts
+from routes import home, reg, auth, lc, posts, reports
 
 app.include_router(home.router, tags=["home"])
 app.include_router(reg.router, tags=["registration"])
 app.include_router(auth.router, tags=["authentication"])
 app.include_router(lc.router, tags=["personal_cabinet"])
 app.include_router(posts.router, tags=["posts"])
+app.include_router(reports.router, tags=["reports"])
 
 # Визуализация
 @app.get("/viz")

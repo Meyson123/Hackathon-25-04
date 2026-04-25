@@ -641,15 +641,13 @@
                     postsChart = new Chart(postsCtx, {
                         type: 'bar',
                         data: {
-                            labels: ['На модерации', 'Опубликованные', 'Черновики'],
+                            labels: ['На модерации'],
                             datasets: [{
                                 label: 'Посты',
                                 data: [
-                                    currentData.posts.pending,
-                                    currentData.posts.published,
-                                    currentData.posts.draft
+                                    currentData.posts.pending
                                 ],
-                                backgroundColor: ['#fbbf24', '#10b981', '#6366f1'],
+                                backgroundColor: ['#fbbf24'],
                                 borderRadius: 8
                             }]
                         },
@@ -872,6 +870,42 @@
                     </td>
                 </tr>
             `).join('');
+        }
+
+        // Экспорт отчета в PDF
+        async function exportReport() {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bx bx-loader-alt"></i> Генерация...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/admin/report');
+
+                if (response.ok) {
+                    // Создаем blob из ответа
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `medihub_report_${new Date().toISOString().slice(0,10)}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert('Ошибка при генерации отчета');
+                }
+            } catch (error) {
+                console.error('Error exporting report:', error);
+                alert('Произошла ошибка при генерации отчета');
+            }
+
+            // Восстанавливаем кнопку через 3 секунды
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bx bx-download"></i> Отчёт';
+                btn.disabled = false;
+            }, 3000);
         }
 
         // Обновление статистики
