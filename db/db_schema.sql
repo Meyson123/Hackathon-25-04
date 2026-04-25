@@ -1,17 +1,18 @@
 -- Схема базы данных для проекта "Медиахаб"
 -- Стек: SQLite 3
 
--- 1. Пользователи
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    full_name TEXT,
-    role TEXT CHECK(role IN ('admin', 'editor', 'observer', 'volunteer')) DEFAULT 'volunteer',
-    points INTEGER DEFAULT 0, -- Баллы для геймификации волонтеров
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
+ -- 1. Пользователи
+ CREATE TABLE users (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     username TEXT UNIQUE NOT NULL,
+     email TEXT UNIQUE NOT NULL,
+     password_hash TEXT NOT NULL,
+     full_name TEXT,
+     role TEXT CHECK(role IN ('admin', 'editor', 'observer', 'volunteer')) DEFAULT 'volunteer',
+     status TEXT CHECK(status IN ('pending', 'active', 'blocked')) DEFAULT 'pending',
+     points INTEGER DEFAULT 0, -- Баллы для геймификации волонтеров
+     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+ );
 -- 2. Категории контента
 CREATE TABLE categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
