@@ -207,8 +207,8 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
-            background: rgba(168, 85, 247, 0.2);
-            color: #a855f7;
+            background: rgba(254, 243, 131, 0.25);
+            color: #FEF383;
         }
         .action-btn {
             background: rgba(255, 255, 255, 0.1);
@@ -272,13 +272,20 @@
                 </div>
             </div>
             <div class="dashboard-controls">
+                <button class="dashboard-btn secondary" onclick="document.getElementById('importInput').click()">
+    <i class="bx bx-upload"></i> Импорт
+</button>
+<input type="file" id="importInput" style="display: none;" onchange="handleImport(this)">
                 <button class="dashboard-btn secondary" onclick="exportReport()">
                     <i class="bx bx-download"></i> Отчёт
                 </button>
-                <button class="dashboard-btn secondary" onclick="refreshStats()">
-                    <i class="bx bx-refresh"></i> Обновить
-                </button>                <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12);">
-                    <i class="bx bx-log-out"></i> Выйти
+                <button class="dashboard-btn secondary" onclick="refreshStats()" style="min-width: 40px;
+            height: 40px;">
+                    <i class="bx bx-refresh"></i> 
+                </button>                
+                <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12); min-width: 40px;
+            height: 40px; border: 1px solid rgba(255, 255, 255, 0.2);;">
+                    <i class="bx bx-log-out"></i> 
                 </button>
             </div>
         </div>
@@ -641,15 +648,13 @@
                     postsChart = new Chart(postsCtx, {
                         type: 'bar',
                         data: {
-                            labels: ['На модерации', 'Опубликованные', 'Черновики'],
+                            labels: ['На модерации'],
                             datasets: [{
                                 label: 'Посты',
                                 data: [
-                                    currentData.posts.pending,
-                                    currentData.posts.published,
-                                    currentData.posts.draft
+                                    currentData.posts.pending
                                 ],
-                                backgroundColor: ['#fbbf24', '#10b981', '#6366f1'],
+                                backgroundColor: ['#fbbf24'],
                                 borderRadius: 8
                             }]
                         },
@@ -872,6 +877,42 @@
                     </td>
                 </tr>
             `).join('');
+        }
+
+        // Экспорт отчета в PDF
+        async function exportReport() {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bx bx-loader-alt"></i> Генерация...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/admin/report');
+
+                if (response.ok) {
+                    // Создаем blob из ответа
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `medihub_report_${new Date().toISOString().slice(0,10)}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert('Ошибка при генерации отчета');
+                }
+            } catch (error) {
+                console.error('Error exporting report:', error);
+                alert('Произошла ошибка при генерации отчета');
+            }
+
+            // Восстанавливаем кнопку через 3 секунды
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bx bx-download"></i> Отчёт';
+                btn.disabled = false;
+            }, 3000);
         }
 
         // Обновление статистики

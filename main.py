@@ -8,8 +8,10 @@ from dotenv import load_dotenv
 import uvicorn
 import os
 
-# Загрузка переменных окружения
-load_dotenv()
+# Загрузка переменных окружения (путь относительно корня проекта, не от cwd процесса)
+_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Переменные из файла .env в корне проекта должны иметь приоритет над пустыми/устаревшими значениями в окружении ОС.
+load_dotenv(os.path.join(_ROOT_DIR, ".env"), override=True)
 
 app = FastAPI(title="MediaHub")
 
@@ -33,13 +35,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/files", StaticFiles(directory="files"), name="files")
 
 # Подключение роутеров
-from routes import home, reg, auth, lc, posts
+from routes import home, reg, auth, lc, posts, reports
 
 app.include_router(home.router, tags=["home"])
 app.include_router(reg.router, tags=["registration"])
 app.include_router(auth.router, tags=["authentication"])
 app.include_router(lc.router, tags=["personal_cabinet"])
 app.include_router(posts.router, tags=["posts"])
+app.include_router(reports.router, tags=["reports"])
 
 # Визуализация
 @app.get("/viz")
