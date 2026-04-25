@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session
-import models, schemas, auth
+from app.models import models
+from app.schemas import schemas
+from app.api import auth
 from datetime import datetime
 
 # --- Пользователи ---

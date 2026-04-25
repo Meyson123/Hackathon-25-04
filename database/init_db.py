@@ -2,9 +2,8 @@ import sqlite3
 import os
 
 def init_db():
-    db_path = 'mediahub.db'
-    schema_path = 'database_schema.sql'
-    
+    db_path = 'bds/mediahub.db'
+    schema_path = 'database_schema.sql'    
     if not os.path.exists(schema_path):
         print(f"Ошибка: Файл {schema_path} не найден.")
         return

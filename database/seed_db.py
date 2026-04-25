@@ -1,8 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import json
 from datetime import datetime, timedelta
-from database import SessionLocal, engine
-from models import Base, User, Category, Template, Post, SocialAccount, Publication, Analytics
-
+from app.core.database import SessionLocal, engine
+from app.models.models import Base, User, Category, Template, Post, SocialAccount, Publication, Analytics
 def seed_data():
     db = SessionLocal()
     try:

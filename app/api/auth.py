@@ -6,7 +6,8 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-import models, database
+from app.models import models
+from app.core import database
 
 # В реальном приложении используйте переменные окружения
 SECRET_KEY = "SUPER_SECRET_KEY_FOR_MEDIAHUB"

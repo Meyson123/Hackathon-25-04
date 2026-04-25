@@ -5,9 +5,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import timedelta
 
-import models, schemas, crud, auth, database
-from database import engine, get_db
-
+from app.models import models
+from app.schemas import schemas
+from app.api import crud, auth
+from app.core import database
+from app.core.database import engine, get_db
 # Создаем таблицы
 models.Base.metadata.create_all(bind=engine)
 
