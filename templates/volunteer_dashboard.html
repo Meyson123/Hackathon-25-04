@@ -459,12 +459,20 @@
     <div class="dashboard-container">
         <!-- Header & Profile -->
         <div class="dashboard-header">
+            <div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <a href="/" class="header-logo-admin">
+                    <img src="../static/kidik_logo_50x50.png" alt="Logo">
+                </a>
+                <div class="profile-section">
             <div class="profile-section">
+                
                 <div class="profile-avatar">{{ (user.full_name or user.username)[:1] | upper }}</div>
-                <div class="profile-info">
+                <div class="profile-info"style="padding-right: 170px;">
                     <h1>Привет, {{ user.full_name or user.username }}!</h1>
                     <p>Твой вклад делает наш центр лучше</p>
                 </div>
+            </div>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
                 <button class="dashboard-btn" type="button" id="openContentModal">
