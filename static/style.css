@@ -1250,8 +1250,8 @@ body {
             width: 100%;
             max-width: 100%;
             color: #fff;
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.1);;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 20px;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
