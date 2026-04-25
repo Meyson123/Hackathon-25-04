@@ -292,7 +292,8 @@
 
         // Переключение панелей
         $$('.lc-nav-item[data-panel]').forEach(function (item) {
-            item.addEventListener('click', function () {
+            item.addEventListener('click', function (e) {
+                if (e && typeof e.preventDefault === 'function') e.preventDefault();
                 var panelId = item.getAttribute('data-panel');
                 // Активный пункт меню
                 $$('.lc-nav-item').forEach(function (n) { n.classList.remove('active'); });

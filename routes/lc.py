@@ -62,7 +62,7 @@ async def lc(request: Request):
 
     role = str(user_data.get("role") or "")
     if role == "admin":
-        template_name = "lc.html"
+        template_name = "admin_dashboard.html"
     elif role == "volunteer":
         template_name = "volunteer_dashboard.html"
     elif role in ("editor", "smm"):

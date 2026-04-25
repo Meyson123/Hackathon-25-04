@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель — Медиахаб</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="gradient-bg"></div>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="/" class="navbar-logo">М</a>
+            <div class="navbar-links">
+                <a href="/">Главная</a>
+                <a href="#" onclick="alert('События — в разработке')">События</a>
+            </div>
+        </div>
+        <div class="navbar-right">
+            <a class="navbar-user" id="navUserBtn">
+                <i class="bx bxs-user"></i>
+                <span id="navUserName">Пользователь</span>
+            </a>
+        </div>
+    </nav>
+
+    <script>
+        window.userData = {
+            id: Number("{{ user.id }}"),
+            username: "{{ user.username }}",
+            email: "{{ user.email }}",
+            role: "{{ user.role }}",
+            status: "{{ user.status }}",
+            name: "{{ user.full_name }}"
+        };
+    </script>
+
+    <!-- ===== LC LAYOUT ===== -->
+    <div class="lc-layout">
+        <!-- SIDEBAR -->
+        <aside class="lc-sidebar">
+            <div class="lc-sidebar-header">
+                <div class="lc-sidebar-avatar" id="lcAvatar">U</div>
+                <div class="lc-sidebar-name" id="lcName">Пользователь</div>
+                <div class="lc-sidebar-role" id="lcRole">—</div>
+            </div>
+
+            <nav class="lc-nav" id="lcNav">
+                <div class="lc-nav-section-title">Администрирование</div>
+                <a class="lc-nav-item active" data-panel="admin-profile" href="#">
+                    <i class="bx bx-user"></i> Профиль
+                </a>
+                <a class="lc-nav-item" data-panel="admin-roles" href="#">
+                    <i class="bx bx-user-check"></i> Назначить роль
+                </a>
+                <a class="lc-nav-item" data-panel="admin-stats" href="#">
+                    <i class="bx bx-bar-chart-alt-2"></i> Статистика
+                </a>
+
+                <div class="lc-nav-divider"></div>
+                <a class="lc-nav-item" id="lcLogout">
+                    <i class="bx bx-log-out"></i> Выйти
+                </a>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="lc-main">
+            <!-- ===== ПРОФИЛЬ ===== -->
+            <div class="lc-panel active" id="panel-admin-profile">
+                <h2 class="lc-page-title">Профиль администратора</h2>
+                <p class="lc-page-subtitle">Информация о вашем аккаунте</p>
+                <div class="lc-stats-grid">
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Имя</div>
+                        <div class="stat-value" id="profileName" style="font-size:1.1em;">—</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Роль</div>
+                        <div class="stat-value" id="profileRole" style="font-size:1.1em;">—</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Статус</div>
+                        <div class="stat-value" id="profileStatus" style="font-size:1.1em;">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== АДМИН: НАЗНАЧИТЬ РОЛЬ ===== -->
+            <div class="lc-panel" id="panel-admin-roles">
+                <h2 class="lc-page-title"><i class="bx bx-user-check"></i> Назначить роль</h2>
+                <p class="lc-page-subtitle">Подтверждение регистраций и управление ролями — в разработке</p>
+                <div class="lc-stat-card" style="text-align:center; padding:40px;">
+                    <i class="bx bx-wrench" style="font-size:48px; color:#6c5ce7;"></i>
+                    <p style="margin-top:12px; color:#6868a0;">Функционал в разработке</p>
+                </div>
+            </div>
+
+            <!-- ===== АДМИН: СТАТИСТИКА ===== -->
+            <div class="lc-panel" id="panel-admin-stats">
+                <h2 class="lc-page-title"><i class="bx bx-bar-chart-alt-2"></i> Статистика</h2>
+                <p class="lc-page-subtitle">Раздел в разработке</p>
+                <div class="lc-stat-card" style="text-align:center; padding:40px;">
+                    <i class="bx bx-wrench" style="font-size:48px; color:#6c5ce7;"></i>
+                    <p style="margin-top:12px; color:#6868a0;">Функционал в разработке</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
+
