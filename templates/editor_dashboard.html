@@ -459,32 +459,7 @@
                         </tr>
                     </thead>
                     <tbody id="moderationTable">
-                        <tr id="row-1">
-                            <td>Волонтер: Анна К.</td>
-                            <td>Фотоотчет с субботника</td>
-                            <td>Мероприятия</td>
-                            <td><span class="status-badge pending">На проверке</span></td>
-                            <td>
-                                <div class="moderation-actions">
-                                    <button onclick="moderatePost(1, 'approve')" class="action-btn approve" title="Одобрить"><i class="bx bx-check"></i></button>
-                                    <button onclick="delayPost(1)" class="action-btn delay" title="Отложить"><i class="bx bx-time"></i></button>
-                                    <button onclick="moderatePost(1, 'reject')" class="action-btn reject" title="Отклонить"><i class="bx bx-x"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr id="row-2">
-                            <td>Волонтер: Игорь М.</td>
-                            <td>Интервью с куратором</td>
-                            <td>Новости</td>
-                            <td><span class="status-badge pending">На проверке</span></td>
-                            <td>
-                                <div class="moderation-actions">
-                                    <button onclick="moderatePost(2, 'approve')" class="action-btn approve" title="Одобрить"><i class="bx bx-check"></i></button>
-                                    <button onclick="delayPost(2)" class="action-btn delay" title="Отложить"><i class="bx bx-time"></i></button>
-                                    <button onclick="moderatePost(2, 'reject')" class="action-btn reject" title="Отклонить"><i class="bx bx-x"></i></button>
-                                </div>
-                            </td>
-                        </tr>
+                        <!-- Посты будут загружены динамически -->
                     </tbody>
                 </table>
             </div>
@@ -617,23 +592,84 @@
         }
 
         // Модерация постов
-        function moderatePost(id, action) {
-            const row = document.getElementById(`row-${id}`);
-            row.style.transform = 'translateX(100px)';
-            row.style.opacity = '0';
-            setTimeout(() => {
-                row.remove();
-                const pendingCount = document.querySelector('#stat-pending .stat-value');
-                const current = parseInt(pendingCount.innerText);
-                pendingCount.innerText = current - 1;
+        async function moderatePost(id, action) {
+            const formData = new FormData();
+            formData.append('action', action);
 
-                // Уведомление
-                const toast = document.createElement('div');
-                toast.className = `toast show ${action === 'approve' ? 'success' : 'error'}`;
-                toast.innerText = action === 'approve' ? 'Пост одобрен и запланирован' : 'Пост отклонен';
-                document.body.appendChild(toast);
-                setTimeout(() => { toast.className = 'toast'; setTimeout(() => toast.remove(), 500); }, 3000);
-            }, 300);
+            try {
+                const response = await fetch(`/api/posts/${id}/moderate`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const row = document.getElementById(`row-${id}`);
+                    row.style.transform = 'translateX(100px)';
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        const pendingCount = document.querySelector('#stat-pending .stat-value');
+                        const current = parseInt(pendingCount.innerText);
+                        pendingCount.innerText = current - 1;
+
+                        // Уведомление
+                        const toast = document.createElement('div');
+                        toast.className = `toast show ${action === 'approve' ? 'success' : 'error'}`;
+                        toast.innerText = action === 'approve' ? 'Пост одобрен и опубликован' : 'Пост отклонен';
+                        document.body.appendChild(toast);
+                        setTimeout(() => { toast.className = 'toast'; setTimeout(() => toast.remove(), 500); }, 3000);
+                    }, 300);
+                } else {
+                    alert('Ошибка при модерации поста');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Произошла ошибка при соединении с сервером');
+            }
+        }
+
+        // Загрузка постов на модерации
+        async function loadPendingPosts() {
+            try {
+                const response = await fetch('/api/posts/pending');
+                if (response.ok) {
+                    const data = await response.json();
+                    const table = document.getElementById('moderationTable');
+                    table.innerHTML = '';
+
+                    if (data.posts.length === 0) {
+                        table.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">Нет постов на модерации</td></tr>';
+                        return;
+                    }
+
+                    data.posts.forEach(post => {
+                        const row = document.createElement('tr');
+                        row.id = `row-${post.id}`;
+                        row.innerHTML = `
+                            <td>${post.author_name} (${post.author_role})</td>
+                            <td>${post.title}</td>
+                            <td>${post.content.substring(0, 50)}...</td>
+                            <td><span class="status-badge pending">На проверке</span></td>
+                            <td>
+                                <div class="moderation-actions">
+                                    <button onclick="moderatePost(${post.id}, 'approve')" class="action-btn approve" title="Одобрить"><i class="bx bx-check"></i></button>
+                                    <button onclick="delayPost(${post.id})" class="action-btn delay" title="Отложить"><i class="bx bx-time"></i></button>
+                                    <button onclick="moderatePost(${post.id}, 'reject')" class="action-btn reject" title="Отклонить"><i class="bx bx-x"></i></button>
+                                </div>
+                            </td>
+                        `;
+                        table.appendChild(row);
+                    });
+
+                    // Обновляем счетчик
+                    const pendingCount = document.querySelector('#stat-pending .stat-value');
+                    if (pendingCount) {
+                        pendingCount.innerText = data.posts.length;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading pending posts:', error);
+            }
         }
 
         function updateAllCharts() {
@@ -657,6 +693,9 @@
 
         window.onload = function() {
             animateCounters();
+
+            // Загружаем посты на модерации
+            loadPendingPosts();
 
             // Глобальные настройки для белого текста в Chart.js
             Chart.defaults.color = '#ffffff';
@@ -842,21 +881,47 @@
                 e.preventDefault();
                 const id = document.getElementById('delayPostId').value;
                 const date = document.getElementById('delayDate').value;
-                
+
                 const submitBtn = delayForm.querySelector('button[type="submit"]');
                 submitBtn.innerText = 'Сохранение...';
                 submitBtn.disabled = true;
 
-                // Имитация задержки сети
-                setTimeout(() => {
-                    alert(`Пост #${id} успешно отложен на ${date}`);
-                    delayModal.style.display = 'none';
-                    moderatePost(id, 'approve'); // Удаляем из очереди модерации
-                    
+                try {
+                    const formData = new FormData();
+                    formData.append('delay_at', date);
+
+                    const response = await fetch(`/api/posts/${id}/schedule`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        alert(`Пост #${id} успешно запланирован на ${date}`);
+                        delayModal.style.display = 'none';
+
+                        // Удаляем из очереди модерации
+                        const row = document.getElementById(`row-${id}`);
+                        if (row) {
+                            row.style.transform = 'translateX(100px)';
+                            row.style.opacity = '0';
+                            setTimeout(() => {
+                                row.remove();
+                                const pendingCount = document.querySelector('#stat-pending .stat-value');
+                                const current = parseInt(pendingCount.innerText);
+                                pendingCount.innerText = current - 1;
+                            }, 300);
+                        }
+                    } else {
+                        alert('Ошибка при планировании поста');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Произошла ошибка при соединении с сервером');
+                } finally {
                     submitBtn.innerText = 'Подтвердить время';
                     submitBtn.disabled = false;
                     delayForm.reset();
-                }, 800);
+                }
             };
         };
     </script>

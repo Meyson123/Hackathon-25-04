@@ -883,4 +883,43 @@
     }
 
     updateNewsCarousel();
+
+    /* ====================================================
+       АВТОМАТИЧЕСКАЯ ПУБЛИКАЦИЯ ЗАПЛАНИРОВАННЫХ ПОСТОВ
+       ==================================================== */
+    function initScheduledPostsPublisher() {
+        // Проверяем и публикуем запланированные посты каждую минуту
+        async function checkAndPublishScheduledPosts() {
+            try {
+                const response = await fetch('/api/posts/publish-scheduled', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.published_count > 0) {
+                        console.log(`Опубликовано ${data.published_count} запланированных постов`);
+                        // Если мы на странице волонтера, обновляем данные
+                        if (window.location.pathname === '/lc') {
+                            // Перезагружаем страницу чтобы показать обновленные данные
+                            setTimeout(() => {
+                                if (typeof loadMyPosts === 'function') loadMyPosts();
+                                if (typeof loadUserPoints === 'function') loadUserPoints();
+                                if (typeof loadUserRanking === 'function') loadUserRanking();
+                            }, 1000);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking scheduled posts:', error);
+            }
+        }
+
+        // Запускаем проверку сразу и затем каждую минуту
+        checkAndPublishScheduledPosts();
+        setInterval(checkAndPublishScheduledPosts, 60000); // Каждую минуту
+    }
+
+    // Запускаем проверку запланированных постов
+    initScheduledPostsPublisher();
 })();
