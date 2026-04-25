@@ -65,18 +65,74 @@
             <div id="eventsListContainer" class="events-list">
                 <div class="no-events">Выберите дату, чтобы увидеть события</div>
             </div>
-        </div>        </div>
+        </div> 
+        
     </div>
-                </div>  
-
-                
-
+    <!-- Лента новостей -->
+        <div class="news-feed-section">
+            <h2 class="section-title">Новости</h2>
+            <div class="news-carousel-container">
+                <button class="carousel-btn prev" id="newsPrevBtn"><i class='bx bx-chevron-left'></i></button>
+                <div class="news-track-wrapper">
+                    <div class="news-track" id="newsTrack">
+                        <!-- Карточки новостей -->
+                         <div class="news-card">
+                            <div class="news-header">
+                                <h3 class="news-title">Открытие нового коворкинга</h3>
+                                <span class="news-date">25.04.2025</span>
+                            </div>
+                            <p class="news-desc">Приглашаем всех на торжественное открытие пространства для работы и творчества.</p>
+                            <div class="news-image">
+                                <img src="../files/test_img_newscard.JPG" alt="Коворкинг" onerror="this.style.display='none'">
+                            </div>
+                        </div>
+                        <div class="news-card">
+                            <div class="news-header">
+                                <h3 class="news-title">Итоги хакатона</h3>
+                                <span class="news-date">24.04.2025</span>
+                            </div>
+                            <p class="news-desc">Поздравляем победителей весеннего хакатона Kodik AI!</p>
+                            <div class="news-image">
+                                <img src="../files/hackathon.jpg" alt="Хакатон" onerror="this.style.display='none'">
+                            </div>
+                        </div>
+                        <div class="news-card">
+                            <div class="news-header">
+                                <h3 class="news-title">Мастер-класс по SMM</h3>
+                                <span class="news-date">23.04.2025</span>
+                            </div>
+                            <p class="news-desc">Узнайте, как продвигать молодежные проекты в социальных сетях.</p>
+                            <div class="news-image">
+                                <img src="../files/smm.jpg" alt="SMM" onerror="this.style.display='none'">
+                            </div>
+                        </div>
+                        <div class="news-card">
+                            <div class="news-header">
+                                <h3 class="news-title">Волонтерский сбор</h3>
+                                <span class="news-date">22.04.2025</span>
+                            </div>
+                            <p class="news-desc">Собираем команду для организации летнего фестиваля.</p>
+                            <div class="news-image">
+                                <img src="../files/volunteers.jpg" alt="Волонтеры" onerror="this.style.display='none'">
+                            </div>
+                        </div>
+                        <div class="news-card">
+                            <div class="news-header">
+                                <h3 class="news-title">Новые курсы дизайна</h3>
+                                <span class="news-date">21.04.2025</span>
+                            </div>
+                            <p class="news-desc">Записывайтесь на бесплатные курсы графического дизайна.</p>
+                            <div class="news-image">
+                                <img src="../files/design.jpg" alt="Дизайн" onerror="this.style.display='none'">
+                            </div>
+                        </div>                    </div>
+                </div>
+                <button class="carousel-btn next" id="newsNextBtn"><i class='bx bx-chevron-right'></i></button>
             </div>
         </div>
+    </div>
 
-        
-        </div>
-    </div>    <script>    // ---------- Управление календарем ----------
+    <script>    // ---------- Управление календарем ----------
     let currentYear = new Date().getFullYear();
     let currentMonth = new Date().getMonth();   // 0-11
     
@@ -336,6 +392,67 @@
     }
     
     initCalendar();
-</script>
-</body>
+
+    // ---------- Управление лентой новостей ----------
+    const newsTrack = document.getElementById('newsTrack');
+    const newsPrevBtn = document.getElementById('newsPrevBtn');
+    const newsNextBtn = document.getElementById('newsNextBtn');
+    let currentNewsIndex = 0;
+    const newsCards = document.querySelectorAll('.news-card');
+    const newsCount = newsCards.length;
+    const newsVisible = 2;
+
+    function updateNewsCarousel() {
+        if (!newsTrack) return;
+        const offset = currentNewsIndex * (100 / newsVisible);
+        newsTrack.style.transform = `translateX(-${offset}%)`;
+        
+        // Скрытие кнопок в крайних положениях
+        if (newsPrevBtn) newsPrevBtn.classList.toggle('hidden', currentNewsIndex === 0);
+        if (newsNextBtn) newsNextBtn.classList.toggle('hidden', currentNewsIndex >= newsCount - newsVisible);
+    }
+
+    function nextNews() {
+        if (currentNewsIndex < newsCount - newsVisible) {
+            currentNewsIndex += newsVisible;
+            if (currentNewsIndex > newsCount - newsVisible) {
+                currentNewsIndex = newsCount - newsVisible;
+            }
+        } else {
+            currentNewsIndex = 0; // Зацикливание для автопрокрутки
+        }
+        updateNewsCarousel();
+    }
+
+    function prevNews() {
+        if (currentNewsIndex > 0) {
+            currentNewsIndex -= newsVisible;
+            if (currentNewsIndex < 0) currentNewsIndex = 0;
+            updateNewsCarousel();
+        }
+    }
+
+    if (newsNextBtn) {
+        newsNextBtn.addEventListener('click', () => {
+            nextNews();
+            resetAutoScroll();
+        });
+    }
+    
+    if (newsPrevBtn) {
+        newsPrevBtn.addEventListener('click', () => {
+            prevNews();
+            resetAutoScroll();
+        });
+    }
+
+    let autoScrollInterval = setInterval(nextNews, 7000);
+
+    function resetAutoScroll() {
+        clearInterval(autoScrollInterval);
+        autoScrollInterval = setInterval(nextNews, 7000);
+    }
+
+    updateNewsCarousel();
+</script></body>
 </html>
