@@ -41,46 +41,45 @@
        AUTH PAGE  (auth.html)
        ==================================================== */
     function initAuth() {
-        var roleStep = $('#roleStep');
         var loginStep = $('#loginStep');
-        if (!roleStep || !loginStep) return;
+        var regStep = $('#regStep');
+        if (!loginStep || !regStep) return;
 
+        var goToReg = $('#goToReg');
         var goToLogin = $('#goToLogin');
-        var goToRole = $('#goToRole');
 
-        // Если пришли по ссылке /auth#login — сразу показать логин
-        if (window.location.hash === '#login') {
-            roleStep.style.display = 'none';
-            loginStep.style.display = '';
+        // Переключение: «Зарегистрироваться» (из логина → регистрация)
+        if (goToReg) {
+            goToReg.addEventListener('click', function (e) {
+                e.preventDefault();
+                loginStep.style.display = 'none';
+                regStep.style.display = '';
+            });
         }
 
-        // Переключение: «Войти»
+        // Переключение: «Войти» (из регистрации → логин)
         if (goToLogin) {
             goToLogin.addEventListener('click', function (e) {
                 e.preventDefault();
-                roleStep.style.display = 'none';
+                regStep.style.display = 'none';
                 loginStep.style.display = '';
             });
         }
 
-        // Переключение: «Зарегистрироваться» (из логина → выбор роли)
-        if (goToRole) {
-            goToRole.addEventListener('click', function (e) {
-                e.preventDefault();
-                loginStep.style.display = 'none';
-                roleStep.style.display = '';
-            });
-        }
+        // Клик по кнопке роли → выбор роли
+        $$('.role-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                $$('.role-btn').forEach(function (b) { b.classList.remove('selected'); });
+                btn.classList.add('selected');
+                var role = btn.getAttribute('data-role');
 
-        // Клик по карточке роли → переход на reg.html?role=...
-        $$('.role-card').forEach(function (card) {
-            card.addEventListener('click', function () {
-                $$('.role-card').forEach(function (c) { c.classList.remove('selected'); });
-                card.classList.add('selected');
-                var role = card.getAttribute('data-role');
-                setTimeout(function () {
-                    window.location.href = '/reg?role=' + encodeURIComponent(role);
-                }, 300);
+                // Заполнить роль в форме регистрации
+                var roleInput = $('#regRole');
+                var roleLabel = $('#regRoleLabel');
+                var roleLabels = { smm: 'СММ', volunteer: 'Волонтёр' };
+
+                if (roleInput) roleInput.value = role;
+                if (roleLabel) roleLabel.textContent = roleLabels[role] || 'Не выбрана';
             });
         });
 
@@ -109,7 +108,8 @@
 
                 if (!ok) return;
 
-                var demoUsers = {                    'admin': { name: 'Администратор', role: 'admin', status: 'active' },
+                var demoUsers = {
+                    'admin': { name: 'Администратор', role: 'admin', status: 'active' },
                     'smm':   { name: 'СММ-менеджер',  role: 'smm',   status: 'active' },
                     'vol':   { name: 'Волонтёр',      role: 'volunteer', status: 'active' }
                 };
@@ -124,8 +124,48 @@
                 }
             });
         }
-    }
 
+        // Регистрационная форма
+        var regForm = $('#regForm');
+        if (regForm) {
+            regForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var ok = true;
+
+                var role = $('#regRole').value;
+                var name = $('#regName').value.trim();
+                var email = $('#regEmail').value.trim();
+                var pass = $('#regPassword').value;
+                var pass2 = $('#regPassword2').value;
+
+                // Очистка ошибок
+                ['regName', 'regEmail', 'regPassword', 'regPassword2'].forEach(clearAuthError);
+
+                if (!role) {
+                    showToast('Выберите роль для регистрации', 'error');
+                    ok = false;
+                }
+                if (!name) { setAuthError('regName', 'Введите имя пользователя'); ok = false; }
+                if (!email) { setAuthError('regEmail', 'Введите email'); ok = false; }
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setAuthError('regEmail', 'Некорректный email'); ok = false; }
+                if (!pass) { setAuthError('regPassword', 'Введите пароль'); ok = false; }
+                else if (pass.length < 6) { setAuthError('regPassword', 'Минимум 6 символов'); ok = false; }
+                if (pass !== pass2) { setAuthError('regPassword2', 'Пароли не совпадают'); ok = false; }
+
+                if (!ok) return;
+
+                // Имитация регистрации (фронт-заглушка)
+                showToast('Заявка отправлена! Ожидайте подтверждения администратором.', 'success');
+                regForm.reset();
+                $('#regRoleLabel').textContent = 'Не выбрана';
+                $$('.role-btn').forEach(function (b) { b.classList.remove('selected'); });
+                setTimeout(function () {
+                    regStep.style.display = 'none';
+                    loginStep.style.display = '';
+                }, 2000);
+            });
+        }
+    }
     function setAuthError(fieldId, msg) {
         var group = $('#' + fieldId + 'Group');
         var err = $('#' + fieldId + 'Error');
@@ -141,52 +181,8 @@
     }
 
     /* ====================================================
-       REG PAGE  (reg.html)
-       ==================================================== */
-    function initReg() {
-        var regForm = $('#regForm');
-        if (!regForm) return;
-
-        var roleLabels = { smm: 'СММ', volunteer: 'Волонтёр' };
-        var role = getParam('role') || '';
-        var roleInput = $('#regRole');
-        var roleLabel = $('#regRoleLabel');
-
-        if (roleInput) roleInput.value = role;
-        if (roleLabel) roleLabel.textContent = roleLabels[role] || 'Не выбрана';
-
-        // Регистрация
-        regForm.addEventListener('submit', function (e) {            e.preventDefault();
-            var ok = true;
-
-            var name = $('#regName').value.trim();
-            var email = $('#regEmail').value.trim();
-            var pass = $('#regPassword').value;
-            var pass2 = $('#regPassword2').value;
-
-            // Очистка ошибок
-            ['regName', 'regEmail', 'regPassword', 'regPassword2'].forEach(clearAuthError);
-
-            if (!name) { setAuthError('regName', 'Введите имя пользователя'); ok = false; }
-            if (!email) { setAuthError('regEmail', 'Введите email'); ok = false; }
-            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setAuthError('regEmail', 'Некорректный email'); ok = false; }
-            if (!pass) { setAuthError('regPassword', 'Введите пароль'); ok = false; }
-            else if (pass.length < 6) { setAuthError('regPassword', 'Минимум 6 символов'); ok = false; }
-            if (pass !== pass2) { setAuthError('regPassword2', 'Пароли не совпадают'); ok = false; }
-
-            if (!ok) return;
-
-            // Имитация регистрации (фронт-заглушка)
-            showToast('Заявка отправлена! Ожидайте подтверждения администратором.', 'success');
-            regForm.reset();
-            setTimeout(function () { window.location.href = '/auth#login'; }, 2000);
-        });
-    }
-
-    /* ====================================================
        LC PAGE  (lc.html)  — Личный кабинет
-       ==================================================== */
-    function initLC() {
+       ==================================================== */    function initLC() {
         var lcNav = $('#lcNav');
         if (!lcNav) return;
 
@@ -467,8 +463,6 @@
 
     if (path.indexOf('/auth') !== -1) {
         initAuth();
-    } else if (path.indexOf('/reg') !== -1) {
-        initReg();
     } else if (path.indexOf('/lc') !== -1) {
         initLC();
     } else {
