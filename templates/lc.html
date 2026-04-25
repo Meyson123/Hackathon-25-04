@@ -262,30 +262,13 @@
                         <thead>
                             <tr>
                                 <th>Заголовок</th>
-                                <th>Тип</th>
+                                <th>Автор</th>
                                 <th>Дата</th>
                                 <th>Статус</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>Открытие нового сезона</td>
-                                <td>Анонс</td>
-                                <td>10 мая 2025</td>
-                                <td><span class="status-badge published">Опубликован</span></td>
-                            </tr>
-                            <tr>
-                                <td>Итоги хакатона</td>
-                                <td>Пост</td>
-                                <td>16 мая 2025</td>
-                                <td><span class="status-badge draft">Черновик</span></td>
-                            </tr>
-                            <tr>
-                                <td>Набор волонтёров</td>
-                                <td>Анонс</td>
-                                <td>20 мая 2025</td>
-                                <td><span class="status-badge pending">На модерации</span></td>
-                            </tr>
+                        <tbody id="postsTableBody">
+                            <!-- Посты будут загружены динамически -->
                         </tbody>
                     </table>
                 </div>
@@ -359,6 +342,78 @@
     <!-- TOAST -->
     <div class="toast" id="toast"></div>
 
+    <script>
+        // Загрузка постов для SMM панели
+        async function loadSMMPosts() {
+            try {
+                const response = await fetch('/api/posts/all');
+                if (response.ok) {
+                    const data = await response.json();
+                    const tableBody = document.getElementById('postsTableBody');
+
+                    if (data.posts.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Нет постов</td></tr>';
+                        return;
+                    }
+
+                    tableBody.innerHTML = data.posts.map(post => {
+                        const statusLabels = {
+                            'draft': 'Черновик',
+                            'pending_review': 'На модерации',
+                            'scheduled': 'Запланировано',
+                            'published': 'Опубликовано'
+                        };
+
+                        const statusClass = post.status === 'published' ? 'published' :
+                                          post.status === 'pending_review' ? 'pending' :
+                                          post.status === 'scheduled' ? 'scheduled' : 'draft';
+
+                        // Формируем дату
+                        let dateStr = '—';
+                        if (post.published_at) {
+                            dateStr = new Date(post.published_at).toLocaleDateString('ru-RU');
+                        } else if (post.scheduled_at) {
+                            dateStr = new Date(post.scheduled_at).toLocaleDateString('ru-RU');
+                        } else if (post.created_at) {
+                            dateStr = new Date(post.created_at).toLocaleDateString('ru-RU');
+                        }
+
+                        // Формируем HTML для тегов
+                        let tagsHtml = '';
+                        if (post.tags && post.tags.length > 0) {
+                            tagsHtml = '<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">';
+                            post.tags.forEach(tag => {
+                                tagsHtml += `<span style="display: inline-block; padding: 3px 8px; background: rgba(128, 128, 128, 0.2); border: 1px solid rgba(128, 128, 128, 0.4); border-radius: 10px; font-size: 10px; color: rgba(255, 255, 255, 0.7);">${tag}</span>`;
+                            });
+                            tagsHtml += '</div>';
+                        }
+
+                        return `
+                            <tr>
+                                <td>
+                                    <div>${post.title}</div>
+                                    ${tagsHtml}
+                                </td>
+                                <td>${post.author_name || '—'}</td>
+                                <td>${dateStr}</td>
+                                <td><span class="status-badge ${statusClass}">${statusLabels[post.status] || post.status}</span></td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error loading SMM posts:', error);
+            }
+        }
+
+        // Загружаем посты при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверяем, является ли пользователь SMM или Editor
+            if (window.userData && (window.userData.role === 'smm' || window.userData.role === 'editor')) {
+                loadSMMPosts();
+            }
+        });
+    </script>
     <script src="/static/script.js"></script>
 </body>
 </html>

@@ -92,7 +92,23 @@ CREATE TABLE analytics (
     engagement_rate REAL -- ER в %
 );
 
+-- 9. Теги для постов
+CREATE TABLE tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. Связь постов с тегами (многие-ко-многим)
+CREATE TABLE post_tags (
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, tag_id)
+);
+
 -- Индексы для ускорения поиска
 CREATE INDEX idx_posts_status ON posts(status);
 CREATE INDEX idx_posts_scheduled_at ON posts(scheduled_at);
 CREATE INDEX idx_analytics_publication_id ON analytics(publication_id);
+CREATE INDEX idx_post_tags_post_id ON post_tags(post_id);
+CREATE INDEX idx_post_tags_tag_id ON post_tags(tag_id);

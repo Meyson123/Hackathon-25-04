@@ -292,3 +292,210 @@ async def generate_report(request: Request):
         filename=filename,
         background=None
     )
+
+@router.get("/api/editor/report")
+async def generate_editor_report(request: Request):
+    """Генерация PDF отчета со статистикой постов для SMM-менеджера"""
+    # Проверяем что пользователь авторизован
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    conn = get_db_connection()
+    try:
+        user = conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not user or user["role"] not in ["smm", "editor", "admin"]:
+            raise HTTPException(status_code=403, detail="SMM/Editor access required")
+
+        # Собираем статистику постов
+        stats = {}
+
+        # Общая статистика постов
+        stats['posts'] = {
+            'total': conn.execute("SELECT COUNT(*) as count FROM posts").fetchone()["count"],
+            'published': conn.execute("SELECT COUNT(*) as count FROM posts WHERE status = 'published'").fetchone()["count"],
+            'pending': conn.execute("SELECT COUNT(*) as count FROM posts WHERE status = 'pending_review'").fetchone()["count"],
+            'draft': conn.execute("SELECT COUNT(*) as count FROM posts WHERE status = 'draft'").fetchone()["count"],
+            'scheduled': conn.execute("SELECT COUNT(*) as count FROM posts WHERE status = 'scheduled'").fetchone()["count"]
+        }
+
+        # Статистика по авторам
+        stats['authors'] = conn.execute("""
+            SELECT u.username, u.role, COUNT(p.id) as post_count,
+                   SUM(CASE WHEN p.status = 'published' THEN 1 ELSE 0 END) as published_count,
+                   SUM(CASE WHEN p.status = 'pending_review' THEN 1 ELSE 0 END) as pending_count
+            FROM users u
+            LEFT JOIN posts p ON u.id = p.author_id
+            GROUP BY u.id
+            ORDER BY post_count DESC
+        """).fetchall()
+
+        # Последние посты
+        stats['recent_posts'] = conn.execute("""
+            SELECT p.id, p.title, p.status, u.username, p.created_at
+            FROM posts p
+            JOIN users u ON p.author_id = u.id
+            ORDER BY p.created_at DESC
+            LIMIT 10
+        """).fetchall()
+
+    finally:
+        conn.close()
+
+    # Создаем PDF
+    filename = f"posts_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    filepath = os.path.join(tempfile.gettempdir(), filename)
+
+    doc = SimpleDocTemplate(filepath, pagesize=letter)
+    story = []
+    styles = getSampleStyleSheet()
+
+    # Создаем стили с кириллическим шрифтом
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontName=CYRILLIC_FONT,
+        fontSize=24,
+        textColor=colors.HexColor('#6366f1'),
+        alignment=TA_CENTER,
+        spaceAfter=30
+    )
+
+    heading2_style = ParagraphStyle(
+        'CustomHeading2',
+        parent=styles['Heading2'],
+        fontName=CYRILLIC_FONT,
+        fontSize=18,
+        textColor=colors.HexColor('#333333'),
+        spaceAfter=12
+    )
+
+    heading3_style = ParagraphStyle(
+        'CustomHeading3',
+        parent=styles['Heading3'],
+        fontName=CYRILLIC_FONT,
+        fontSize=14,
+        textColor=colors.HexColor('#333333'),
+        spaceAfter=12
+    )
+
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontName=CYRILLIC_FONT,
+        fontSize=10,
+        textColor=colors.gray
+    )
+
+    # Заголовок
+    story.append(Paragraph("Отчет о постах платформы Медиахаб", title_style))
+    story.append(Spacer(1, 12))
+
+    # Дата генерации
+    date_style = ParagraphStyle(
+        'DateStyle',
+        parent=normal_style,
+        alignment=TA_CENTER
+    )
+    story.append(Paragraph(f"Дата генерации: {datetime.now().strftime('%d.%m.%Y %H:%M')}", date_style))
+    story.append(Spacer(1, 20))
+
+    # Секция статистики постов
+    story.append(Paragraph("Общая статистика постов", heading2_style))
+    story.append(Spacer(1, 12))
+
+    post_data = [
+        ['Статус', 'Количество'],
+        ['Всего постов', str(stats['posts']['total'])],
+        ['Опубликованных', str(stats['posts']['published'])],
+        ['На модерации', str(stats['posts']['pending'])],
+        ['Черновиков', str(stats['posts']['draft'])],
+        ['Запланированных', str(stats['posts']['scheduled'])],
+    ]
+
+    post_table = Table(post_data, colWidths=[3*inch, 2*inch])
+    post_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#10b981')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), CYRILLIC_FONT),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    story.append(post_table)
+    story.append(Spacer(1, 20))
+
+    # Статистика по авторам
+    story.append(Paragraph("Статистика по авторам", heading2_style))
+    story.append(Spacer(1, 12))
+
+    author_data = [['Автор', 'Роль', 'Всего постов', 'Опубликовано', 'На модерации']]
+    for author in stats['authors']:
+        author_data.append([
+            author['username'],
+            author['role'],
+            str(author['post_count']),
+            str(author['published_count'] or 0),
+            str(author['pending_count'] or 0)
+        ])
+
+    author_table = Table(author_data, colWidths=[2*inch, 1.5*inch, 1*inch, 1*inch, 1*inch])
+    author_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#a855f7')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), CYRILLIC_FONT),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    story.append(author_table)
+    story.append(Spacer(1, 20))
+
+    # Последние посты
+    story.append(Paragraph("Последние посты", heading2_style))
+    story.append(Spacer(1, 12))
+
+    recent_data = [['ID', 'Заголовок', 'Автор', 'Статус', 'Дата']]
+    status_names = {
+        'published': 'Опубликован',
+        'pending_review': 'На модерации',
+        'draft': 'Черновик',
+        'scheduled': 'Запланирован'
+    }
+
+    for post in stats['recent_posts']:
+        recent_data.append([
+            str(post['id']),
+            post['title'][:30] + '...' if len(post['title']) > 30 else post['title'],
+            post['username'],
+            status_names.get(post['status'], post['status']),
+            post['created_at'][:10] if post['created_at'] else ''
+        ])
+
+    recent_table = Table(recent_data, colWidths=[0.5*inch, 2.5*inch, 1.5*inch, 1.5*inch, 1*inch])
+    recent_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3b82f6')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), CYRILLIC_FONT),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    story.append(recent_table)
+
+    # Генерируем PDF
+    doc.build(story)
+
+    # Отправляем файл
+    return FileResponse(
+        filepath,
+        media_type="application/pdf",
+        filename=filename,
+        background=None
+    )

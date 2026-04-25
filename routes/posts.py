@@ -132,7 +132,6 @@ async def create_post(
     text: str = Form(...),
     publish_at: str | None = Form(None),
     photo: UploadFile | None = File(None),
-    post_to_vk: str | None = Form(None),
 ):
     user = _require_editor_or_smm(request)
     author_id = int(user["id"])
@@ -204,6 +203,24 @@ async def create_post(
                 """,
                 (post_id, file_url, photo.content_type, len(content)),
             )
+
+        # Обработка тегов
+        if tags:
+            tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+            for tag_name in tag_list:
+                # Проверяем, существует ли тег
+                tag = cur.execute("SELECT id FROM tags WHERE name = ?", (tag_name,)).fetchone()
+                if not tag:
+                    # Создаём новый тег
+                    cur.execute("INSERT INTO tags (name) VALUES (?)", (tag_name,))
+                    tag_id = cur.lastrowid
+                else:
+                    tag_id = tag["id"]
+                # Связываем пост с тегом
+                cur.execute(
+                    "INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)",
+                    (post_id, tag_id)
+                )
 
         vk_result = None
         if (post_to_vk or "").lower() in ("1", "true", "on", "yes"):
@@ -312,6 +329,17 @@ async def get_pending_posts(request: Request):
                 post_dict["media"] = []
             del post_dict["file_url"]
             del post_dict["file_type"]
+
+            # Получаем теги поста
+            tags = conn.execute("""
+                SELECT t.name
+                FROM tags t
+                JOIN post_tags pt ON t.id = pt.tag_id
+                WHERE pt.post_id = ?
+                ORDER BY t.name
+            """, (post_dict["id"],)).fetchall()
+
+            post_dict["tags"] = [tag["name"] for tag in tags]
             result.append(post_dict)
 
         return JSONResponse({"posts": result})
@@ -417,68 +445,174 @@ async def schedule_post(request: Request, post_id: int, delay_at: str = Form(...
             (moderator_id, scheduled_at, now, post_id)
         )
 
-        vk_result = None
-        if (post_to_vk or "").lower() in ("1", "true", "on", "yes"):
-            if str(user["role"]) not in ("smm", "admin"):
-                raise HTTPException(status_code=403, detail="VK posting is only available for SMM role")
-            cfg = _vk_config()
-            if not cfg:
-                raise HTTPException(status_code=500, detail="VK is not configured (VK_ACCESS_TOKEN)")
-            if status != "published":
-                raise HTTPException(status_code=400, detail="VK posting is only supported for immediate publishing")
+        conn.commit()
+        return JSONResponse({"ok": True, "scheduled_at": scheduled_at})
+    finally:
+        conn.close()
 
-            try:
-                owner_id = cfg["owner_id"]
-                if owner_id is None:
-                    owner_id = await _vk_get_current_user_id(token=cfg["token"], v=cfg["v"])
 
-                attachment = None
-                vk_warning = None
-                if local_image_abs_path:
-                    try:
-                        attachment = await _vk_upload_wall_photo(
-                            owner_id=owner_id,
-                            token=cfg["token"],
-                            v=cfg["v"],
-                            abs_path=local_image_abs_path,
-                        )
-                    except Exception as img_err:
-                        # With community (group) tokens, VK may forbid upload server methods (error 27).
-                        # In that case we still publish the text, but without the image.
-                        msg = str(img_err)
-                        if "VK error 27" in msg and owner_id < 0:
-                            vk_warning = "VK rejected image upload for group token (error 27). Posted text without image."
-                            attachment = None
-                        else:
-                            raise
+@router.get("/api/posts/my")
+async def get_my_posts(request: Request, limit: int = 10, offset: int = 0):
+    """Получить посты текущего пользователя"""
+    user_id, role = _require_authenticated_user(request)
 
-                vk_result = await _vk_wall_post(
-                    owner_id=owner_id,
-                    token=cfg["token"],
-                    v=cfg["v"],
-                    message=clean_text,
-                    attachment=attachment,
-                )
-                if vk_warning:
-                    vk_result = dict(vk_result or {})
-                    vk_result["warning"] = vk_warning
+    conn = get_db_connection()
+    try:
+        posts = conn.execute("""
+            SELECT
+                p.id,
+                p.title,
+                p.content,
+                p.status,
+                p.created_at,
+                p.published_at,
+                mf.file_url,
+                mf.file_type
+            FROM posts p
+            LEFT JOIN media_files mf ON p.id = mf.post_id
+            WHERE p.author_id = ?
+            ORDER BY p.created_at DESC
+            LIMIT ? OFFSET ?
+        """, (user_id, limit, offset)).fetchall()
 
-                cur.execute(
+        result = []
+        for post in posts:
+            post_dict = dict(post)
+            if post_dict["file_url"]:
+                post_dict["media"] = [{
+                    "url": post_dict["file_url"],
+                    "type": post_dict["file_type"]
+                }]
+            else:
+                post_dict["media"] = []
+            del post_dict["file_url"]
+            del post_dict["file_type"]
+            result.append(post_dict)
+
+        # Получаем общее количество постов
+        total = conn.execute(
+            "SELECT COUNT(*) as count FROM posts WHERE author_id = ?",
+            (user_id,)
+        ).fetchone()["count"]
+
+        return JSONResponse({
+            "posts": result,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        })
+    finally:
+        conn.close()
+
+
+@router.get("/api/user/points")
+async def get_user_points(request: Request):
+    """Получить баллы текущего пользователя"""
+    user_id, role = _require_authenticated_user(request)
+
+    conn = get_db_connection()
+    try:
+        user = conn.execute(
+            "SELECT points FROM users WHERE id = ?",
+            (user_id,)
+        ).fetchone()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        return JSONResponse({"points": user["points"]})
+    finally:
+        conn.close()
+
+
+@router.get("/api/user/ranking")
+async def get_user_ranking(request: Request):
+    """Получить место пользователя в рейтинге волонтеров"""
+    user_id, role = _require_authenticated_user(request)
+
+    conn = get_db_connection()
+    try:
+        # Получаем текущие баллы пользователя
+        user = conn.execute(
+            "SELECT points FROM users WHERE id = ?",
+            (user_id,)
+        ).fetchone()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user_points = user["points"]
+
+        # Получаем количество волонтеров с баллами больше, чем у текущего пользователя
+        rank = conn.execute(
+            """
+            SELECT COUNT(*) + 1 as rank
+            FROM users
+            WHERE role = 'volunteer' AND points > ?
+            """,
+            (user_points,)
+        ).fetchone()["rank"]
+
+        # Получаем общее количество волонтеров
+        total_volunteers = conn.execute(
+            "SELECT COUNT(*) as count FROM users WHERE role = 'volunteer'"
+        ).fetchone()["count"]
+
+        return JSONResponse({
+            "rank": rank,
+            "total": total_volunteers
+        })
+    finally:
+        conn.close()
+
+
+@router.post("/api/posts/publish-scheduled")
+async def publish_scheduled_posts():
+    """Публикация запланированных постов (вызывается автоматически)"""
+    conn = get_db_connection()
+    try:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Находим все запланированные посты, время которых наступило
+        scheduled_posts = conn.execute(
+            """
+            SELECT id, author_id, title, content
+            FROM posts
+            WHERE status = 'scheduled' AND scheduled_at <= ?
+            """,
+            (now,)
+        ).fetchall()
+
+        published_count = 0
+
+        for post in scheduled_posts:
+            # Публикуем пост
+            conn.execute(
+                """
+                UPDATE posts
+                SET status = 'published', published_at = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (now, now, post["id"])
+            )
+
+            # Если автор волонтер, начисляем баллы
+            author = conn.execute(
+                "SELECT role FROM users WHERE id = ?",
+                (post["author_id"],)
+            ).fetchone()
+
+            if author and author["role"] == "volunteer":
+                conn.execute(
                     """
-                    INSERT INTO publications (post_id, social_account_id, external_post_id, status, published_at)
-                    VALUES (?, NULL, ?, 'published', ?)
+                    UPDATE users
+                    SET points = points + 10
+                    WHERE id = ?
                     """,
-                    (post_id, str(vk_result.get("post_id")), now),
+                    (post["author_id"],)
                 )
-            except Exception as e:
-                cur.execute(
-                    """
-                    INSERT INTO publications (post_id, social_account_id, external_post_id, status, error_message, published_at)
-                    VALUES (?, NULL, NULL, 'failed', ?, ?)
-                    """,
-                    (post_id, str(e), now),
-                )
-                raise HTTPException(status_code=502, detail=f"VK publish failed: {e}")
+
+            published_count += 1
 
         conn.commit()
         return JSONResponse({"ok": True, "id": post_id, "status": status, "vk": vk_result})
