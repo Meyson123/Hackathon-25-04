@@ -3,32 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Медиахаб - Панель управления</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Медиахаб - Визуализация архитектуры</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f8fafc; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .card { 
-            background: white; 
-            border-radius: 12px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-            padding: 20px; 
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-        .nav-link {
-            transition: all 0.2s ease;
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        .nav-link.active {
-            background-color: #3b82f6;
+
+        p {
+            color: #666;
+            line-height: 1.45;
+        }
+        
+        h1 {
+            text-align: center;
             color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        .nav-link:hover:not(.active) {
-            background-color: #e2e8f0;
+        
+        .diagram-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
         }
+        
+        .diagram-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .diagram-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .diagram-card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .diagram-card .subtitle {
+            margin-bottom: 15px;
+        }
+        
         .mermaid {
             width: 100%;
             overflow: auto;
@@ -38,153 +77,58 @@
             align-items: flex-start;
             -webkit-overflow-scrolling: touch;
         }
+
         .mermaid svg {
             max-width: 100%;
             height: auto;
         }
-        .diagram-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-            overflow: hidden;
+
+        .mermaid > svg,
+        .mermaid > pre {
+            margin: 0 auto;
         }
-        .diagram-card:hover {
-            transform: translateY(-5px);
+        
+        .full-width {
+            grid-column: 1 / -1;
         }
-        .diagram-card h2 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
+
+        @media (max-width: 1100px) {
+            .diagram-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 560px) {
+            body {
+                padding: 14px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 18px;
+            }
+
+            .diagram-card {
+                padding: 16px;
+                border-radius: 12px;
+            }
+
+            .diagram-grid {
+                gap: 14px;
+            }
         }
     </style>
 </head>
-<body class="min-h-screen">
-    <!-- Навигация -->
-    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <span class="text-xl font-bold text-slate-900">Медиахаб</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button onclick="switchTab('dashboard')" id="dashboardTab" class="nav-link active px-4 py-2 rounded-lg text-sm font-semibold transition-all">
-                        📊 Дашборд
-                    </button>
-                    <button onclick="switchTab('architecture')" id="architectureTab" class="nav-link px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 transition-all">
-                        🏗️ Архитектура
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Контент дашборда -->
-    <div id="dashboardContent" class="p-8">
-        <div class="max-w-7xl mx-auto">
-            <header class="mb-8 flex justify-between items-center">
-                <div>
-                    <h1 class="text-3xl font-bold text-slate-900">Аналитика Медиахаба</h1>
-                    <p class="text-slate-500">Обзор эффективности контента за последние 30 дней</p>
-                </div>
-                <div class="flex gap-3">
-                    <button class="bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">Экспорт PDF</button>
-                    <button class="bg-blue-600 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:bg-blue-700">Создать пост</button>
-                </div>
-            </header>
-
-            <!-- Ключевые показатели -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="card cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all" onclick="updateMainChart('views')">
-                    <p class="text-sm text-slate-500 mb-1">Всего просмотров</p>
-                    <h3 class="text-2xl font-bold text-slate-900">42,850</h3>
-                    <span class="text-green-500 text-xs font-semibold">↑ 12% за неделю</span>
-                </div>
-                <div class="card cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all" onclick="updateMainChart('er')">
-                    <p class="text-sm text-slate-500 mb-1">Средний ER</p>
-                    <h3 class="text-2xl font-bold text-slate-900">8.4%</h3>
-                    <span class="text-green-500 text-xs font-semibold">↑ 0.5% за неделю</span>
-                </div>
-                <div class="card cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all" onclick="updateMainChart('posts')">
-                    <p class="text-sm text-slate-500 mb-1">Активных постов</p>
-                    <h3 class="text-2xl font-bold text-slate-900">124</h3>
-                    <span class="text-slate-400 text-xs">В 3 соцсетях</span>
-                </div>
-                <div class="card cursor-pointer hover:ring-2 hover:ring-red-500 transition-all" onclick="updateMainChart('errors')">
-                    <p class="text-sm text-slate-500 mb-1">Ошибки публикации</p>
-                    <h3 class="text-2xl font-bold text-red-600">2</h3>
-                    <span class="text-red-400 text-xs font-semibold">Требуют внимания</span>
-                </div>
-            </div>
-
-            <!-- Графики -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div class="card">
-                    <div class="flex justify-between items-center mb-4">
-                        <h4 id="mainChartTitle" class="text-lg font-semibold text-slate-800">Динамика охвата</h4>
-                        <span class="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded">Детально</span>
-                    </div>
-                    <canvas id="reachChart" height="200"></canvas>
-                </div>
-                <div class="card">
-                    <h4 class="text-lg font-semibold mb-4 text-slate-800">Баланс категорий</h4>
-                    <div class="flex justify-center">
-                        <div style="width: 280px;">
-                            <canvas id="categoryChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="card lg:col-span-2">
-                    <h4 class="text-lg font-semibold mb-4 text-slate-800">Сравнение площадок (Engagement)</h4>
-                    <canvas id="platformChart" height="150"></canvas>
-                </div>
-                <div class="card">
-                    <h4 class="text-lg font-semibold mb-4 text-slate-800">Топ постов</h4>
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold">1</div>
-                            <div class="flex-1">
-                                <p class="text-sm font-semibold text-slate-800 truncate">Хакатон 2024: Регистрация</p>
-                                <p class="text-xs text-slate-500">ER: 12.5% • 2.4k просмотров</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600 font-bold">2</div>
-                            <div class="flex-1">
-                                <p class="text-sm font-semibold text-slate-800 truncate">Итоги грантового конкурса</p>
-                                <p class="text-xs text-slate-500">ER: 10.2% • 1.8k просмотров</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600 font-bold">3</div>
-                            <div class="flex-1">
-                                <p class="text-sm font-semibold text-slate-800 truncate">Новый коворкинг в МЦ</p>
-                                <p class="text-xs text-slate-500">ER: 9.8% • 3.1k просмотров</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Контент архитектуры (скрыт по умолчанию) -->
-    <div id="architectureContent" class="p-8 hidden">
-        <div class="max-w-7xl mx-auto">
-            <h1 class="text-3xl font-bold text-slate-900 mb-8">🎯 Медиахаб - Архитектура системы</h1>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Карта сайта -->
-                <div class="diagram-card lg:col-span-2">
-                    <h2>📁 Структура сайта</h2>
-                    <p class="text-slate-500 mb-4">Полная навигационная структура с разделами для SMM-менеджера, администратора и волонтёра</p>
-                    <div class="mermaid">
+<body>
+    <div class="container">
+        <h1>🎯 Медиахаб - Архитектура системы</h1>
+        
+        <div class="diagram-grid">
+            <!-- Карта сайта -->
+            <div class="diagram-card full-width">
+                <h2>📁 Структура сайта</h2>
+                <p class="subtitle">Полная навигационная структура с разделами для SMM-менеджера, администратора и волонтёра</p>
+                <div class="mermaid">
 graph TD
     Root[Медиахаб]
     Root --> Landing[Главная]
@@ -202,14 +146,14 @@ graph TD
     style SMM fill:#10B981,color:#fff
     style Admin fill:#EF4444,color:#fff
     style Volunteer fill:#F59E0B,color:#fff
-                    </div>
                 </div>
+            </div>
 
-                <!-- Матрица доступа -->
-                <div class="diagram-card">
-                    <h2>🔐 Матрица доступа</h2>
-                    <p class="text-slate-500 mb-4">Права доступа для трёх ролей: Волонтёр, SMM-менеджер, Администратор</p>
-                    <div class="mermaid">
+            <!-- Матрица доступа -->
+            <div class="diagram-card">
+                <h2>🔐 Матрица доступа</h2>
+                <p class="subtitle">Права доступа для трёх ролей: Волонтёр, SMM-менеджер, Администратор</p>
+                <div class="mermaid">
 graph LR
     subgraph Волонтёр
         V[Просмотр<br/>Создание<br/>Участие]
@@ -224,14 +168,14 @@ graph LR
     style V fill:#F59E0B,color:#fff
     style S fill:#10B981,color:#fff
     style A fill:#EF4444,color:#fff
-                    </div>
                 </div>
+            </div>
 
-                <!-- Роадмап -->
-                <div class="diagram-card">
-                    <h2>📅 Роадмап (1 день)</h2>
-                    <p class="text-slate-500 mb-4">План разработки на 14 часов с 10 ключевыми этапами</p>
-                    <div class="mermaid">
+            <!-- Роадмап -->
+            <div class="diagram-card">
+                <h2>📅 Роадмап (1 день)</h2>
+                <p class="subtitle">План разработки на 14 часов с 10 ключевыми этапами</p>
+                <div class="mermaid">
 graph TD
     Start[Старт]
     
@@ -255,14 +199,14 @@ graph TD
     style Public fill:#84CC16,color:#fff
     style Test fill:#F97316,color:#fff
     style Demo fill:#6366F1,color:#fff
-                    </div>
                 </div>
+            </div>
 
-                <!-- Архитектура системы -->
-                <div class="diagram-card lg:col-span-2">
-                    <h2>🏗️ Архитектура системы</h2>
-                    <p class="text-slate-500 mb-4">Взаимодействие Frontend (HTML/CSS/JS), Backend (FastAPI), очередей (Redis/Celery) и внешних API</p>
-                    <div class="mermaid">
+            <!-- Архитектура системы -->
+            <div class="diagram-card full-width">
+                <h2>🏗️ Архитектура системы</h2>
+                <p class="subtitle">Взаимодействие Frontend (HTML/CSS/JS), Backend (FastAPI), очередей (Redis/Celery) и внешних API</p>
+                <div class="mermaid">
 graph TB
     subgraph Клиент
         UI[HTML + CSS + JS]
@@ -300,14 +244,14 @@ graph TB
     style SQLite fill:#F59E0B,color:#fff
     style VK fill:#0077FF,color:#fff
     style TG fill:#0088CC,color:#fff
-                    </div>
                 </div>
+            </div>
 
-                <!-- Поток публикации -->
-                <div class="diagram-card">
-                    <h2>📤 Поток публикации</h2>
-                    <p class="text-slate-500 mb-4">Процесс создания поста, планирования и автопубликации в VK и Telegram</p>
-                    <div class="mermaid">
+            <!-- Поток публикации -->
+            <div class="diagram-card">
+                <h2>📤 Поток публикации</h2>
+                <p class="subtitle">Процесс создания поста, планирования и автопубликации в VK и Telegram</p>
+                <div class="mermaid">
 sequenceDiagram
     participant SMM
     participant API
@@ -322,14 +266,14 @@ sequenceDiagram
     Celery->>Social: Публикация
     Social-->>Celery: OK
     Celery->>DB: Статистика
-                    </div>
                 </div>
+            </div>
 
-                <!-- Уровни волонтёров -->
-                <div class="diagram-card">
-                    <h2>⭐ Уровни волонтёров</h2>
-                    <p class="text-slate-500 mb-4">Система геймификации с 4 уровнями и расширяющимися привилегиями</p>
-                    <div class="mermaid">
+            <!-- Уровни волонтёров -->
+            <div class="diagram-card">
+                <h2>⭐ Уровни волонтёров</h2>
+                <p class="subtitle">Система геймификации с 4 уровнями и расширяющимися привилегиями</p>
+                <div class="mermaid">
 graph LR
     L1[Начальный<br/>0-50]
     L2[Продвинутый<br/>51-200]
@@ -344,14 +288,14 @@ graph LR
     style L2 fill:#10B981,color:#fff
     style L3 fill:#3B82F6,color:#fff
     style L4 fill:#8B5CF6,color:#fff
-                    </div>
                 </div>
+            </div>
 
-                <!-- Состояния поста -->
-                <div class="diagram-card">
-                    <h2>🔄 Состояния поста</h2>
-                    <p class="text-slate-500 mb-4">Жизненный цикл поста от черновика до архива</p>
-                    <div class="mermaid">
+            <!-- Состояния поста -->
+            <div class="diagram-card">
+                <h2>🔄 Состояния поста</h2>
+                <p class="subtitle">Жизненный цикл поста от черновика до архива</p>
+                <div class="mermaid">
 stateDiagram-v2
     [*] --> Черновик
     Черновик --> Запланирован
@@ -361,14 +305,14 @@ stateDiagram-v2
     На_модерации --> Опубликован
     Опубликован --> В_архиве
     В_архиве --> [*]
-                    </div>
                 </div>
+            </div>
 
-                <!-- Аналитика -->
-                <div class="diagram-card">
-                    <h2>📊 Поток аналитики</h2>
-                    <p class="text-slate-500 mb-4">Сбор данных из VK и Telegram с отображением в дашборде</p>
-                    <div class="mermaid">
+            <!-- Аналитика -->
+            <div class="diagram-card">
+                <h2>📊 Поток аналитики</h2>
+                <p class="subtitle">Сбор данных из VK и Telegram с отображением в дашборде</p>
+                <div class="mermaid">
 graph TB
     VK[VK API]
     TG[Telegram API]
@@ -384,14 +328,14 @@ graph TB
     style VK fill:#0077FF,color:#fff
     style TG fill:#0088CC,color:#fff
     style Dashboard fill:#10B981,color:#fff
-                    </div>
                 </div>
+            </div>
 
-                <!-- Безопасность -->
-                <div class="diagram-card">
-                    <h2>🛡️ Безопасность</h2>
-                    <p class="text-slate-500 mb-4">JWT-токены и RBAC для контроля доступа к API</p>
-                    <div class="mermaid">
+            <!-- Безопасность -->
+            <div class="diagram-card">
+                <h2>🛡️ Безопасность</h2>
+                <p class="subtitle">JWT-токены и RBAC для контроля доступа к API</p>
+                <div class="mermaid">
 graph TB
     Client[Client]
     JWT[JWT Token]
@@ -408,14 +352,14 @@ graph TB
     style JWT fill:#F59E0B,color:#fff
     style RBAC fill:#EF4444,color:#fff
     style API fill:#10B981,color:#fff
-                    </div>
                 </div>
+            </div>
 
-                <!-- Киллер-фичи -->
-                <div class="diagram-card lg:col-span-2">
-                    <h2>🚀 Киллер-фичи проекта</h2>
-                    <p class="text-slate-500 mb-4">12 инновационных функций в 3 фазах реализации для выделения на хакатоне</p>
-                    <div class="mermaid">
+            <!-- Киллер-фичи -->
+            <div class="diagram-card full-width">
+                <h2>🚀 Киллер-фичи проекта</h2>
+                <p class="subtitle">12 инновационных функций в 3 фазах реализации для выделения на хакатоне</p>
+                <div class="mermaid">
 graph LR
     subgraph Фаза_3_Будущее
         F8[🌐 Мультиязычность<br/>Автоперевод на<br/>3-5 языков]
@@ -450,14 +394,14 @@ graph LR
     style F9 fill:#8B5CF6,color:#fff
     style F10 fill:#8B5CF6,color:#fff
     style F_VKMiniApp fill:#8B5CF6,color:#fff
-                    </div>
                 </div>
+            </div>
 
-                <!-- Инфраструктура -->
-                <div class="diagram-card lg:col-span-2">
-                    <h2>🚀 Инфраструктура</h2>
-                    <p class="text-slate-500 mb-4">Полная инфраструктура развёртывания от CDN до хранилища файлов</p>
-                    <div class="mermaid">
+            <!-- Развёртывание -->
+            <div class="diagram-card full-width">
+                <h2>🚀 Инфраструктура</h2>
+                <p class="subtitle">Полная инфраструктура развёртывания от CDN до хранилища файлов</p>
+                <div class="mermaid">
 graph TB
     User[Пользователь]
     CDN[CDN]
@@ -483,34 +427,12 @@ graph TB
     style SQLite fill:#F59E0B,color:#fff
     style Redis fill:#DC2626,color:#fff
     style Storage fill:#10B981,color:#fff
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Переключение между вкладками
-        function switchTab(tab) {
-            const dashboardContent = document.getElementById('dashboardContent');
-            const architectureContent = document.getElementById('architectureContent');
-            const dashboardTab = document.getElementById('dashboardTab');
-            const architectureTab = document.getElementById('architectureTab');
-
-            if (tab === 'dashboard') {
-                dashboardContent.classList.remove('hidden');
-                architectureContent.classList.add('hidden');
-                dashboardTab.classList.add('active');
-                architectureTab.classList.remove('active');
-            } else {
-                dashboardContent.classList.add('hidden');
-                architectureContent.classList.remove('hidden');
-                dashboardTab.classList.remove('active');
-                architectureTab.classList.add('active');
-            }
-        }
-
-        // Инициализация Mermaid
         mermaid.initialize({
             startOnLoad: true,
             theme: 'default',
@@ -522,106 +444,9 @@ graph TB
                 useMaxWidth: true
             },
             themeVariables: {
-                fontFamily: "Inter, Segoe UI, Tahoma, Geneva, Verdana, sans-serif"
+                fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif"
             }
         });
-
-        // Данные для графиков дашборда
-        const chartData = {
-            views: {
-                title: 'Динамика охвата (Просмотры)',
-                label: 'Просмотры',
-                data: [3200, 4100, 3800, 5200, 4800, 6100, 5900],
-                color: '#3b82f6'
-            },
-            er: {
-                title: 'Динамика вовлеченности (ER %)',
-                label: 'Engagement Rate',
-                data: [7.2, 8.1, 7.9, 8.4, 8.2, 8.8, 8.4],
-                color: '#10b981'
-            },
-            posts: {
-                title: 'Активность публикаций',
-                label: 'Кол-во постов',
-                data: [3, 5, 2, 4, 6, 3, 5],
-                color: '#f59e0b'
-            },
-            errors: {
-                title: 'Ошибки и сбои',
-                label: 'Ошибки',
-                data: [0, 1, 0, 0, 1, 0, 0],
-                color: '#ef4444'
-            }
-        };
-
-        let mainChart;
-
-        function initMainChart() {
-            const ctx = document.getElementById('reachChart').getContext('2d');
-            mainChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['18 Апр', '19 Апр', '20 Апр', '21 Апр', '22 Апр', '23 Апр', '24 Апр'],
-                    datasets: [{
-                        label: chartData.views.label,
-                        data: chartData.views.data,
-                        borderColor: chartData.views.color,
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: { 
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-        }
-
-        function updateMainChart(type) {
-            const data = chartData[type];
-            
-            document.getElementById('mainChartTitle').innerText = data.title;
-            
-            mainChart.data.datasets[0].label = data.label;
-            mainChart.data.datasets[0].data = data.data;
-            mainChart.data.datasets[0].borderColor = data.color;
-            mainChart.data.datasets[0].backgroundColor = data.color + '1A';
-            
-            mainChart.update();
-        }
-
-        // Инициализация всех графиков при загрузке
-        window.onload = function() {
-            initMainChart();
-
-            // График категорий
-            new Chart(document.getElementById('categoryChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Мероприятия', 'Гранты', 'Новости', 'Другое'],
-                    datasets: [{
-                        data: [40, 25, 20, 15],
-                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#94a3b8']
-                    }]
-                },
-                options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
-            });
-
-            // Сравнение площадок
-            new Chart(document.getElementById('platformChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Лайки', 'Комментарии', 'Репосты', 'Сохранения'],
-                    datasets: [
-                        { label: 'VK', data: [450, 120, 85, 40], backgroundColor: '#4c75a3' },
-                        { label: 'Telegram', data: [380, 95, 110, 65], backgroundColor: '#24a1de' }
-                    ]
-                },
-                options: { scales: { y: { beginAtZero: true } } }
-            });
-        };
     </script>
 </body>
 </html>
