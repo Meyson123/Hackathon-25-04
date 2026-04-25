@@ -158,12 +158,12 @@
         if (roleInput) roleInput.value = role;
         if (roleLabel) roleLabel.textContent = roleLabels[role] || 'Не выбрана';
 
-        // Если роль не передана — предложить вернуться
-        if (!role) {
-            showToast('Сначала выберите роль', 'error');
-            setTimeout(function () { window.location.href = '/auth'; }, 1500);
-            return;
-        }
+        // ВРЕМЕННО: для демонстрации убираем перенаправление если роль не выбрана
+        // if (!role) {
+        //     showToast('Сначала выберите роль', 'error');
+        //     setTimeout(function () { window.location.href = '/auth'; }, 1500);
+        //     return;
+        // }
 
         regForm.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -202,10 +202,9 @@
 
         var user = getUser();
 
-        // Если не авторизован — на страницу авторизации
+        // ВРЕМЕННО: для демонстрации без бэкенда используем демо-пользователя
         if (!user) {
-            window.location.href = '/auth';
-            return;
+            user = { username: 'demo', name: 'Демонстрационный пользователь', role: 'admin', status: 'active' };
         }
 
         // Заполнить сайдбар
