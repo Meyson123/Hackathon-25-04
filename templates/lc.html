@@ -27,6 +27,17 @@
         </div>
     </nav>
 
+    <script>
+        window.userData = {
+            id: Number("{{ request.session.get('user_id', 0) }}"),
+            username: "{{ request.session.get('username', '') }}",
+            email: "{{ request.session.get('email', '') }}",
+            role: "{{ request.session.get('role', '') }}",
+            status: "{{ request.session.get('status', '') }}",
+            name: "{{ request.session.get('username', '') }}"
+        };
+    </script>
+
     <!-- ===== LC LAYOUT ===== -->
     <div class="lc-layout">
 

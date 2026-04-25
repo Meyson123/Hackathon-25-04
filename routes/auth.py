@@ -47,11 +47,14 @@ async def auth_post(
             })
 
         # Создание сессии
-        request.session["user_id"] = user['id']
-        request.session["username"] = user['username']
-        request.session["email"] = user['email']
-        request.session["role"] = user['role']
-        request.session["status"] = user['status']
+        request.session["user_id"] = int(user['id'])
+        request.session["username"] = str(user['username'])
+        request.session["email"] = str(user['email'])
+        request.session["role"] = str(user['role'])
+        request.session["status"] = str(user['status'])
+        
+        response = RedirectResponse(url="/lc", status_code=303)
+        return response
 
     except Exception as e:
         return templates.TemplateResponse("auth.html", {

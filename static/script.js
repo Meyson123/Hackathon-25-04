@@ -108,20 +108,33 @@
 
                 if (!ok) return;
 
-                var demoUsers = {
-                    'admin': { name: 'Администратор', role: 'admin', status: 'active' },
-                    'smm':   { name: 'СММ-менеджер',  role: 'smm',   status: 'active' },
-                    'vol':   { name: 'Волонтёр',      role: 'volunteer', status: 'active' }
-                };
+                // Отправка данных на сервер
+                var formData = new FormData();
+                formData.append('username', username);
+                formData.append('password', password);
 
-                var found = demoUsers[username];
-                if (found && password === '123') {
-                    setUser({ username: username, name: found.name, role: found.role, status: found.status });
-                    showToast('Добро пожаловать, ' + found.name + '!', 'success');
-                    setTimeout(function () { window.location.href = '/lc'; }, 800);
-                } else {
-                    showToast('Неверное имя пользователя или пароль', 'error');
-                }
+                fetch('/auth', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return;
+                    }
+                    return response.text().then(text => {
+                        // Проверяем наличие реального сообщения об ошибке, а не просто подстроки 'error'
+                        if (text.includes('class="auth-error visible"') || text.includes('Ошибка')) {
+                            showToast('Неверное имя пользователя или пароль', 'error');
+                        } else {
+                            window.location.href = '/lc';
+                        }
+                    });
+                })
+                .catch(err => {
+                    console.error('Auth error:', err);
+                    showToast('Ошибка при авторизации', 'error');
+                });
             });
         }
 
@@ -154,15 +167,34 @@
 
                 if (!ok) return;
 
-                // Имитация регистрации (фронт-заглушка)
-                showToast('Заявка отправлена! Ожидайте подтверждения администратором.', 'success');
-                regForm.reset();
-                $('#regRoleLabel').textContent = 'Не выбрана';
-                $$('.role-btn').forEach(function (b) { b.classList.remove('selected'); });
-                setTimeout(function () {
-                    regStep.style.display = 'none';
-                    loginStep.style.display = '';
-                }, 2000);
+                // Отправка данных на сервер
+                var formData = new FormData();
+                formData.append('username', name);
+                formData.append('email', email);
+                formData.append('password', pass);
+                formData.append('password2', pass2);
+                formData.append('role', role);
+
+                fetch('/reg', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        showToast('Регистрация успешна! Ожидайте подтверждения.', 'success');
+                        setTimeout(function () {
+                            window.location.href = response.url;
+                        }, 2000);
+                    } else {
+                        return response.text().then(text => {
+                            showToast('Ошибка при регистрации', 'error');
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Reg error:', err);
+                    showToast('Ошибка при регистрации', 'error');
+                });
             });
         }
     }
@@ -186,7 +218,21 @@
         var lcNav = $('#lcNav');
         if (!lcNav) return;
 
+        // Пытаемся получить данные из сессии (через скрытые элементы или глобальную переменную)
+        // Если их нет, используем localStorage как запасной вариант
         var user = getUser();
+
+        // Если в localStorage пусто, попробуем инициализировать из данных, которые мог передать бэкенд
+        if (!user && window.userData) {
+            user = window.userData;
+            setUser(user);
+        }
+
+        if (!user) {
+            // Если пользователя нет нигде, редирект на вход
+            window.location.href = '/auth';
+            return;
+        }
 
         // Заполнить сайдбар        var avatar = $('#lcAvatar');
         var nameEl = $('#lcName');

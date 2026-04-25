@@ -17,7 +17,7 @@ def get_db_connection():
 
 @router.get("/reg")
 async def reg(request: Request):
-    return templates.TemplateResponse("reg.html", {"request": request})
+    return templates.TemplateResponse("auth.html", {"request": request})
 
 @router.post("/reg")
 async def reg_post(
@@ -30,13 +30,13 @@ async def reg_post(
 ):
     # Валидация
     if password != password2:
-        return templates.TemplateResponse("reg.html", {
+        return templates.TemplateResponse("auth.html", {
             "request": request,
             "error": "Пароли не совпадают"
         })
 
     if len(password) < 6:
-        return templates.TemplateResponse("reg.html", {
+        return templates.TemplateResponse("auth.html", {
             "request": request,
             "error": "Пароль должен содержать минимум 6 символов"
         })
@@ -50,7 +50,7 @@ async def reg_post(
         ).fetchone()
 
         if existing_user:
-            return templates.TemplateResponse("reg.html", {
+            return templates.TemplateResponse("auth.html", {
                 "request": request,
                 "error": "Пользователь с таким именем или email уже существует"
             })
@@ -67,7 +67,7 @@ async def reg_post(
 
     except Exception as e:
         conn.rollback()
-        return templates.TemplateResponse("reg.html", {
+        return templates.TemplateResponse("auth.html", {
             "request": request,
             "error": f"Ошибка при регистрации: {str(e)}"
         })
