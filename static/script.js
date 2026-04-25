@@ -20,6 +20,76 @@
         setTimeout(function () { t.className = 'toast'; }, 3000);
     }
 
+    async function postJson(url, bodyObj) {
+        var resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(bodyObj || {})
+        });
+        var data = null;
+        try { data = await resp.json(); } catch (e) { data = null; }
+        if (!resp.ok) {
+            var msg = (data && (data.detail || data.error)) || ('HTTP ' + resp.status);
+            throw new Error(msg);
+        }
+        return data;
+    }
+
+    function initAiEditButtons() {
+        // Editor dashboard modal
+        var btn1 = $('#aiEditPostBtn');
+        var ta1 = $('#postText');
+        if (btn1 && ta1) {
+            btn1.addEventListener('click', async function () {
+                var originalLabel = btn1.innerText;
+                btn1.disabled = true;
+                btn1.innerText = 'Генерация...';
+                try {
+                    var res = await postJson('/api/ai/edit-post', { text: ta1.value || '' });
+                    if (res && res.ok && typeof res.text === 'string') {
+                        ta1.value = res.text;
+                        showToast('Текст обновлён ИИ', 'success');
+                    } else {
+                        throw new Error('Некорректный ответ ИИ');
+                    }
+                } catch (e) {
+                    console.error('AI edit error:', e);
+                    showToast(e && e.message ? e.message : 'Ошибка ИИ', 'error');
+                } finally {
+                    btn1.disabled = false;
+                    btn1.innerText = originalLabel;
+                }
+            });
+        }
+
+        // Volunteer dashboard modal
+        var btn2 = $('#aiEditContentBtn');
+        var ta2 = $('#contentText');
+        if (btn2 && ta2) {
+            btn2.addEventListener('click', async function () {
+                var originalLabel2 = btn2.innerText;
+                btn2.disabled = true;
+                btn2.innerText = 'Генерация...';
+                try {
+                    var res2 = await postJson('/api/ai/edit-post', { text: ta2.value || '' });
+                    if (res2 && res2.ok && typeof res2.text === 'string') {
+                        ta2.value = res2.text;
+                        showToast('Текст обновлён ИИ', 'success');
+                    } else {
+                        throw new Error('Некорректный ответ ИИ');
+                    }
+                } catch (e2) {
+                    console.error('AI edit error:', e2);
+                    showToast(e2 && e2.message ? e2.message : 'Ошибка ИИ', 'error');
+                } finally {
+                    btn2.disabled = false;
+                    btn2.innerText = originalLabel2;
+                }
+            });
+        }
+    }
+
     /** Получить параметр из URL */
     function getParam(name) {
         var url = new URL(window.location.href);
@@ -538,6 +608,7 @@
 
     // Фолбэк: если кнопка выхода есть на странице (любой роли) — подключаем.
     initLogout();
+    initAiEditButtons();
     /*=============
      Из home.html 
      ==============*/

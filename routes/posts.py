@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 import uuid
 import httpx
+from pydantic import BaseModel
 
 _ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -34,6 +35,23 @@ def _require_editor_or_smm(request: Request) -> sqlite3.Row:
             raise HTTPException(status_code=403, detail="Inactive user")
         if str(user["role"]) not in ("editor", "smm", "admin"):
             raise HTTPException(status_code=403, detail="Forbidden")
+        return user
+    finally:
+        conn.close()
+
+
+def _require_authenticated(request: Request) -> sqlite3.Row:
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    conn = get_db_connection()
+    try:
+        user = conn.execute("SELECT id, role, status FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        if str(user["status"]) != "active":
+            raise HTTPException(status_code=403, detail="Inactive user")
         return user
     finally:
         conn.close()
@@ -136,6 +154,7 @@ async def create_post(
 ):
     user = _require_editor_or_smm(request)
     author_id = int(user["id"])
+    role = str(user["role"])
 
     clean_text = (text or "").strip()
     if not clean_text:
@@ -272,6 +291,74 @@ async def create_post(
         return JSONResponse({"ok": True, "id": post_id, "status": status, "vk": vk_result})
     finally:
         conn.close()
+
+
+class AiEditPostRequest(BaseModel):
+    text: str
+
+
+@router.post("/api/ai/edit-post")
+async def ai_edit_post(request: Request, payload: AiEditPostRequest):
+    """
+    Proxy to local LLM server (OpenAI-compatible) to rewrite text as a social post.
+    """
+    _require_authenticated(request)
+
+    base_url = os.getenv("LLM_BASE_URL", "http://127.0.0.1:1234").rstrip("/")
+    model = os.getenv("LLM_MODEL")
+
+    user_text = (payload.text or "").strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Empty text")
+
+    prompt = (
+        "на основе этого текста сделай пост в соц сети, добавь эмодзи и хештеги\n\n"
+        f"Текст:\n{user_text}"
+    )
+
+    req_body = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "Ты SMM-редактор. Пиши по-русски. Дай готовый пост одним текстом."},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.7,
+    }
+
+    # Most local servers (LM Studio / Ollama OpenAI adapter) expose /v1/chat/completions
+    url = f"{base_url}/v1/chat/completions"
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            if not model:
+                m = await client.get(f"{base_url}/v1/models")
+                m.raise_for_status()
+                mdata = m.json()
+                ids = [it.get("id") for it in (mdata.get("data") or []) if isinstance(it, dict)]
+                # Prefer non-embedding models
+                ids = [i for i in ids if i and "embed" not in str(i).lower()] or ids
+                if not ids:
+                    raise HTTPException(status_code=502, detail="No models available on LLM server")
+                model = str(ids[0])
+                req_body["model"] = model
+
+            r = await client.post(url, json=req_body)
+            r.raise_for_status()
+            data = r.json()
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"LLM request failed: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+
+    try:
+        content = (data.get("choices") or [])[0]["message"]["content"]
+    except Exception:
+        content = None
+
+    content = (content or "").strip()
+    if not content:
+        raise HTTPException(status_code=502, detail="LLM returned empty response")
+
+    return JSONResponse({"ok": True, "text": content})
 
 
 @router.get("/api/posts/pending")
