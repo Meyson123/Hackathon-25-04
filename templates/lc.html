@@ -59,15 +59,20 @@
                 </a>
 
                 <!-- === СММ === -->
-                <div class="lc-nav-divider role-smm" style="display:none;"></div>
-                <div class="lc-nav-section-title role-smm" style="display:none;">Контент</div>
-                <a class="lc-nav-item role-smm" data-panel="smm-events" style="display:none;">
+                <div class="lc-nav-divider role-smm" ></div> <!--- вернуть class = "display:none" везде-->
+                <div class="lc-nav-section-title role-smm" style="display: flex; justify-content: space-between; align-items: center;">
+                    Контент
+                    <button onclick="alert('Добавление поста')" style="background: none; border: none; color: var(--accent-color); cursor: pointer; font-size: 1.2rem;" title="Добавить пост">
+                        <i class="bx bx-plus-circle"></i>
+                    </button>
+                </div>
+                <a class="lc-nav-item role-smm" data-panel="smm-events" >
                     <i class="bx bx-calendar"></i> События
                 </a>
-                <a class="lc-nav-item role-smm" data-panel="smm-posts" style="display:none;">
+                <a class="lc-nav-item role-smm" data-panel="smm-posts" >
                     <i class="bx bx-news"></i> Посты / Анонсы
                 </a>
-                <a class="lc-nav-item role-smm" data-panel="smm-stats" style="display:none;">
+                <a class="lc-nav-item role-smm" data-panel="smm-stats" >
                     <i class="bx bx-line-chart"></i> Статистика по постам
                 </a>
 
@@ -277,8 +282,12 @@
 
             <!-- ===== СММ: СТАТИСТИКА ПО ПОСТАМ ===== -->
             <div class="lc-panel" id="panel-smm-stats">
-                <h2 class="lc-page-title"><i class="bx bx-line-chart"></i> Статистика по постам</h2>
-                <p class="lc-page-subtitle">Аналитика ваших публикаций</p>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="lc-page-title"><i class="bx bx-line-chart"></i> Статистика по постам</h2>
+                    <button class="lc-btn" onclick="alert('Экспорт дашборда...')" style="padding: 8px 16px; font-size: 0.9rem;">
+                        <i class="bx bx-export"></i> Экспорт
+                    </button>
+                </div>                <p class="lc-page-subtitle">Аналитика ваших публикаций</p>
                 <div class="lc-stats-grid">
                     <div class="lc-stat-card">
                         <div class="stat-label">Всего постов</div>

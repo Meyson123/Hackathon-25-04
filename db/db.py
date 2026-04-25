@@ -1,9 +1,12 @@
 import sqlite3
 import os
+import bcrypt
 
 def init_db():
-    db_path = 'bds/mediahub.db'
-    schema_path = 'database_schema.sql'    
+    """Инициализация базы данных"""
+    db_path = os.path.join(os.path.dirname(__file__), 'mediahub.db')
+    schema_path = os.path.join(os.path.dirname(__file__), 'db_schema.sql')
+
     if not os.path.exists(schema_path):
         print(f"Ошибка: Файл {schema_path} не найден.")
         return
@@ -12,119 +15,58 @@ def init_db():
         conn = sqlite3.connect(db_path)
         with open(schema_path, 'r', encoding='utf-8') as f:
             schema = f.read()
-        
+
         conn.executescript(schema)
         conn.commit()
-        
+
         # Проверка созданных таблиц
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cursor.fetchall()
-        
+
         print(f"База данных '{db_path}' успешно инициализирована.")
         print("Созданные таблицы:")
         for table in tables:
             print(f" - {table[0]}")
-            
+
+        # Создание тестового администратора
+        create_admin_user(conn)
+
     except Exception as e:
         print(f"Произошла ошибка: {e}")
     finally:
         if conn:
             conn.close()
 
-if __name__ == "__main__":
-    init_db()
-
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import json
-from datetime import datetime, timedelta
-from app.core.database import SessionLocal, engine
-from app.models.models import Base, User, Category, Template, Post, SocialAccount, Publication, Analytics
-def seed_data():
-    db = SessionLocal()
+def create_admin_user(conn):
+    """Создание тестового администратора"""
     try:
-        # 1. Создаем пользователя (админ)
-        admin = User(
-            email="admin@mediahub.ru",
-            password_hash="hash_here", # В реальном приложении здесь будет bcrypt
-            full_name="Иван Иванов",
-            role="admin"
-        )
-        db.add(admin)
-        
-        # 2. Категории
-        cat_event = Category(name="Мероприятия", slug="events", color="#3b82f6")
-        cat_grant = Category(name="Гранты", slug="grants", color="#10b981")
-        cat_news = Category(name="Новости", slug="news", color="#f59e0b")
-        db.add_all([cat_event, cat_grant, cat_news])
-        
-        # 3. Шаблоны
-        tpl_announcement = Template(
-            name="Анонс мероприятия",
-            content_template="📢 {title}\n\n📅 {date}\n📍 {location}\n\n{description}",
-            variables=json.dumps(["title", "date", "location", "description"])
-        )
-        db.add(tpl_announcement)
-        
-        # 4. Соцсети
-        vk_acc = SocialAccount(platform="vk", account_name="Молодежный Центр ВК", is_active=True)
-        tg_acc = SocialAccount(platform="telegram", account_name="МЦ Телеграм", is_active=True)
-        db.add_all([vk_acc, tg_acc])
-        
-        db.commit() # Сохраняем, чтобы получить ID
+        # Проверяем, существует ли уже админ
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE username = 'admin'")
+        existing_admin = cursor.fetchone()
 
-        # 5. Посты
-        post1 = Post(
-            title="Хакатон 2024",
-            content="Приглашаем всех на весенний хакатон!",
-            status="published",
-            category_id=cat_event.id,
-            author_id=admin.id,
-            published_at=datetime.utcnow() - timedelta(days=2)
-        )
-        
-        post2 = Post(
-            title="Грантовый конкурс",
-            content="Успей подать заявку на грант до конца месяца.",
-            status="scheduled",
-            category_id=cat_grant.id,
-            author_id=admin.id,
-            scheduled_at=datetime.utcnow() + timedelta(days=1)
-        )
-        db.add_all([post1, post2])
-        db.commit()
+        if existing_admin:
+            print("Администратор уже существует.")
+            return
 
-        # 6. Публикации и Аналитика для первого поста
-        pub_vk = Publication(
-            post_id=post1.id,
-            social_account_id=vk_acc.id,
-            status="published",
-            published_at=datetime.utcnow() - timedelta(days=2)
-        )
-        db.add(pub_vk)
-        db.commit()
+        # Хеширование пароля
+        password = "admin123"
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-        analytics = Analytics(
-            publication_id=pub_vk.id,
-            views=1250,
-            reactions=85,
-            comments=12,
-            shares=5,
-            engagement_rate=7.5
+        # Создание администратора
+        cursor.execute(
+            "INSERT INTO users (username, email, password_hash, full_name, role, status) VALUES (?, ?, ?, ?, ?, ?)",
+            ("admin", "admin@mediahub.ru", hashed_password, "Администратор", "admin", "active")
         )
-        db.add(analytics)
-        
-        db.commit()
-        print("Тестовые данные успешно добавлены!")
+        conn.commit()
+        print("Тестовый администратор создан:")
+        print("  Логин: admin")
+        print("  Пароль: admin123")
 
     except Exception as e:
-        print(f"Ошибка при заполнении: {e}")
-        db.rollback()
-    finally:
-        db.close()
+        print(f"Ошибка при создании администратора: {e}")
+        conn.rollback()
 
 if __name__ == "__main__":
-    seed_data()
+    init_db()
