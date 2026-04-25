@@ -13,14 +13,75 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[Optional[str]] = mapped_column(String(255))
-    role: Mapped[str] = mapped_column(String(20), server_default="editor")
+    role: Mapped[str] = mapped_column(String(20), server_default="volunteer")
+    points: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    posts: Mapped[List["Post"]] = relationship(back_populates="author")
+    posts: Mapped[List["Post"]] = relationship(
+        back_populates="author", 
+        foreign_keys="[Post.author_id]"
+    )
+    moderated_posts: Mapped[List["Post"]] = relationship(
+        back_populates="moderator", 
+        foreign_keys="[Post.moderator_id]"
+    )
 
     __table_args__ = (
-        CheckConstraint("role IN ('admin', 'editor', 'observer')", name="check_user_role"),
+        CheckConstraint("role IN ('admin', 'editor', 'observer', 'volunteer')", name="check_user_role"),
     )
+
+class Category(Base):
+    __tablename__ = "categories"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    color: Mapped[str] = mapped_column(String(7), server_default="#3b82f6")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    posts: Mapped[List["Post"]] = relationship(back_populates="category")
+
+class Template(Base):
+    __tablename__ = "templates"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    content_template: Mapped[str] = mapped_column(Text, nullable=False)
+    variables: Mapped[Optional[str]] = mapped_column(Text) # Храним как JSON строку
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    posts: Mapped[List["Post"]] = relationship(back_populates="template")
+
+class Post(Base):
+    __tablename__ = "posts"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[Optional[str]] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), server_default="draft")
+    
+    category_id: Mapped[Optional[int]] = mapped_column(ForeignKey("categories.id", ondelete="SET NULL"))
+    template_id: Mapped[Optional[int]] = mapped_column(ForeignKey("templates.id", ondelete="SET NULL"))
+    author_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    moderator_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    
+    scheduled_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    author: Mapped["User"] = relationship(back_populates="posts", foreign_keys=[author_id])
+    moderator: Mapped[Optional["User"]] = relationship(back_populates="moderated_posts", foreign_keys=[moderator_id])
+    category: Mapped["Category"] = relationship(back_populates="posts")
+    template: Mapped["Template"] = relationship(back_populates="posts")
+    media: Mapped[List["MediaFile"]] = relationship(back_populates="post", cascade="all, delete-orphan")
+    publications: Mapped[List["Publication"]] = relationship(back_populates="post", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        CheckConstraint("status IN ('draft', 'pending_review', 'scheduled', 'published', 'failed')", name="check_post_status"),
+    )
+
 
 class Category(Base):
     __tablename__ = "categories"

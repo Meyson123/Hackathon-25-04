@@ -7,7 +7,8 @@ CREATE TABLE users (
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     full_name TEXT,
-    role TEXT CHECK(role IN ('admin', 'editor', 'observer')) DEFAULT 'editor',
+    role TEXT CHECK(role IN ('admin', 'editor', 'observer', 'volunteer')) DEFAULT 'volunteer',
+    points INTEGER DEFAULT 0, -- Баллы для геймификации волонтеров
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -35,10 +36,11 @@ CREATE TABLE posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     content TEXT,
-    status TEXT CHECK(status IN ('draft', 'scheduled', 'published', 'failed')) DEFAULT 'draft',
+    status TEXT CHECK(status IN ('draft', 'pending_review', 'scheduled', 'published', 'failed')) DEFAULT 'draft',
     category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
     template_id INTEGER REFERENCES templates(id) ON DELETE SET NULL,
     author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    moderator_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- Кто одобрил пост волонтера
     scheduled_at DATETIME, -- Когда опубликовать
     published_at DATETIME, -- Когда фактически опубликован
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

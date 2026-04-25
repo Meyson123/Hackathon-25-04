@@ -17,7 +17,8 @@ class Category(CategoryBase):
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
-    role: str = "editor"
+    role: str = "volunteer"
+    points: int = 0
 
 class UserCreate(UserBase):
     password: str
@@ -36,6 +37,7 @@ class PostBase(BaseModel):
     category_id: Optional[int] = None
     template_id: Optional[int] = None
     scheduled_at: Optional[datetime] = None
+    moderator_id: Optional[int] = None
 
 class PostCreate(PostBase):
     pass
