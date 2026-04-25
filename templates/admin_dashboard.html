@@ -23,8 +23,16 @@
             flex-wrap: wrap;
             gap: 20px;
         }
-        .dashboard-title h1 {
-            font-size: 32px;
+        .header-logo-admin {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-logo-admin img {
+            height: 50px;
+            width: auto;
+        }
+        .dashboard-title h1 {            font-size: 32px;
             font-weight: 700;
             color: #e8e8e8;
             margin: 0 0 5px 0;
@@ -255,15 +263,21 @@
     <div class="dashboard-container">
         <!-- Header -->
         <div class="dashboard-header">
-            <div class="dashboard-title">
-                <h1>Админ-панель</h1>
-                <p>Управление платформой и пользователями</p>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <a href="/" class="header-logo-admin">
+                    <img src="../static/kidik_logo_50x50.png" alt="Logo">
+                </a>                <div class="dashboard-title">
+                    <h1>Админ-панель</h1>
+                    <p>Управление платформой и пользователями</p>
+                </div>
             </div>
             <div class="dashboard-controls">
+                <button class="dashboard-btn secondary" onclick="exportReport()">
+                    <i class="bx bx-download"></i> Отчёт
+                </button>
                 <button class="dashboard-btn secondary" onclick="refreshStats()">
                     <i class="bx bx-refresh"></i> Обновить
-                </button>
-                <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12);">
+                </button>                <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12);">
                     <i class="bx bx-log-out"></i> Выйти
                 </button>
             </div>
