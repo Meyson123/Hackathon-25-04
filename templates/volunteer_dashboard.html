@@ -296,6 +296,110 @@
             padding: 25px;
             backdrop-filter: blur(10px);
         }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 22px;
+            color: #fff;
+        }
+        .close-modal {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 28px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .close-modal:hover {
+            color: #fff;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+        .form-group textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: #fff;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+        }
+        .file-upload-wrapper {
+            position: relative;
+            width: 100%;
+            height: 120px;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .file-upload-wrapper:hover {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.05);
+        }
+        .file-upload-wrapper i {
+            font-size: 32px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 8px;
+        }
+        .file-upload-wrapper span {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        #imagePreview {
+            margin-top: 10px;
+            display: none;
+            max-width: 100%;
+            border-radius: 8px;
+            max-height: 150px;
+            object-fit: cover;
+        }
         @media (max-width: 768px) {
             .gamification-grid,
             .content-grid {
@@ -331,7 +435,7 @@
                 </div>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <button class="dashboard-btn" type="button">
+                <button class="dashboard-btn" type="button" id="openContentModal">
                     <i class="bx bx-plus"></i>
                     Предложить контент
                 </button>
@@ -434,8 +538,37 @@
         </div>
     </div>
 
+    <!-- Modal for Suggesting Content -->
+    <div id="contentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Предложить контент</h2>
+                <span class="close-modal" id="closeModal">&times;</span>
+            </div>
+            <form id="suggestContentForm">
+                <div class="form-group">
+                    <label for="contentText">Описание или текст поста</label>
+                    <textarea id="contentText" name="text" placeholder="О чем ваш материал?" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Фотографии</label>
+                    <div class="file-upload-wrapper">
+                        <i class="bx bx-cloud-upload"></i>
+                        <span>Нажмите или перетащите фото</span>
+                        <input type="file" id="contentFile" name="photo" accept="image/*">
+                    </div>
+                    <img id="imagePreview" src="#" alt="Предпросмотр">
+                </div>
+                <button type="submit" class="dashboard-btn" style="width: 100%; justify-content: center;">
+                    Отправить на модерацию
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script>
         window.onload = function() {
+            // Chart initialization
             new Chart(document.getElementById('volunteerActivityChart'), {
                 type: 'line',
                 data: {
@@ -458,6 +591,54 @@
                     }
                 }
             });
+
+            // Modal Logic
+            const modal = document.getElementById('contentModal');
+            const openBtn = document.getElementById('openContentModal');
+            const closeBtn = document.getElementById('closeModal');
+            const form = document.getElementById('suggestContentForm');
+            const fileInput = document.getElementById('contentFile');
+            const imagePreview = document.getElementById('imagePreview');
+
+            openBtn.onclick = () => modal.style.display = 'flex';
+            closeBtn.onclick = () => modal.style.display = 'none';
+            window.onclick = (event) => {
+                if (event.target == modal) modal.style.display = 'none';
+            };
+
+            // Image preview
+            fileInput.onchange = function() {
+                const [file] = fileInput.files;
+                if (file) {
+                    imagePreview.src = URL.createObjectURL(file);
+                    imagePreview.style.display = 'block';
+                }
+            };
+
+            // Form submission
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                
+                try {
+                    const response = await fetch('/api/suggest-content', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        alert('Контент успешно отправлен на модерацию!');
+                        form.reset();
+                        imagePreview.style.display = 'none';
+                        modal.style.display = 'none';
+                    } else {
+                        alert('Ошибка при отправке. Попробуйте позже.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Произошла ошибка при соединении с сервером.');
+                }
+            };
         };
     </script>
     <script src="/static/script.js"></script>
