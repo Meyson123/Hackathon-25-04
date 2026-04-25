@@ -17,7 +17,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
+    padding: 0;
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
@@ -1076,7 +1076,9 @@ body {
             display: flex;
             width: 100%;
             min-height: 95vh;
-        }        /* Шапка (5%) */        .header {
+        }        /* Шапка (5%) */        
+        
+        .header {
             height: 5vh;
             min-height: 50px;
             display: flex;
@@ -1084,7 +1086,7 @@ body {
             justify-content: space-between;
             align-self: top;
             padding: 0 30px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -1168,7 +1170,7 @@ body {
         /* Левый блок (40%) - Календарь */
         .calendar-section {
             width: 40%;
-            height: 80vh;
+            height: 95vh;
             padding: 20px;
             border-right: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
@@ -1195,7 +1197,7 @@ body {
             width: 100%;
             max-width: 600px;
             padding: 20px;
-            background: transparent;
+            background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.3));
             border: 2px solid rgba(255, 255, 255, 0.15);
             border-radius: 20px;
             backdrop-filter: blur(20px);
@@ -1250,8 +1252,8 @@ body {
             width: 100%;
             max-width: 100%;
             color: #fff;
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.1);;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 20px;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -1577,7 +1579,7 @@ body {
 }
 /* Лента новостей */
 .news-feed-section {
-    margin-top: 40px;
+    margin: 40px 20px;
     padding: 20px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 20px;
@@ -1605,7 +1607,7 @@ body {
     transition: transform 0.5s ease-in-out;
 }
 .news-card {
-    min-width: calc(50% - 10px);
+    min-width: calc(35% - 10px);
     background: rgba(255, 255, 255, 0.1);
     padding: 20px;
     border-radius: 15px;
@@ -1614,7 +1616,6 @@ body {
     flex-direction: column;
     gap: 12px;
 }
-
 .news-header {
     display: flex;
     justify-content: space-between;
@@ -1627,7 +1628,6 @@ body {
     font-weight: bold;
     color: #fff;
 }
-
 .news-date {
     font-size: 0.9rem;
     font-weight: bold;
@@ -1656,7 +1656,8 @@ body {
     object-fit: contain;
     display: block;
     background: rgba(0, 0, 0, 0.2);
-}.news-date {
+}
+.news-date {
     font-size: 0.8rem;
     color: var(--accent-color, #00d2ff);
     margin-bottom: 10px;
@@ -1676,7 +1677,6 @@ body {
     color: white;
     width: 40px;
     height: 40px;
-    min-width: 40px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -1685,11 +1685,12 @@ body {
     font-size: 1.5rem;
     transition: opacity 0.3s, background 0.3s;
     z-index: 10;
-    flex-shrink: 0;
-}.carousel-btn:hover {
+}
+.carousel-btn:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 .carousel-btn.hidden {
     opacity: 0;
     pointer-events: none;
 }
+

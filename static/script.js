@@ -810,14 +810,25 @@
     const newsVisible = 2;
 
     function updateNewsCarousel() {
-        if (!newsTrack) return;
-        const offset = currentNewsIndex * (100 / newsVisible);
-        newsTrack.style.transform = `translateX(-${offset}%)`;
+    if (!newsTrack) return;
+    const newsCards = newsTrack.querySelectorAll('.news-card');
+    if (newsCards.length === 0) return;
+
+    const cardWidth = newsCards[0].offsetWidth;
+    const gap = 20; // Соответствует gap в CSS
         
-        // Скрытие кнопок в крайних положениях
-        if (newsPrevBtn) newsPrevBtn.classList.toggle('hidden', currentNewsIndex === 0);
-        if (newsNextBtn) newsNextBtn.classList.toggle('hidden', currentNewsIndex >= newsCount - newsVisible);
+    const offset = currentNewsIndex * (cardWidth + gap);
+    newsTrack.style.transform = `translateX(-${offset}px)`;
+        
+    const containerWidth = newsTrack.parentElement.offsetWidth;
+    const trackWidth = newsTrack.scrollWidth;
+
+    if (newsPrevBtn) newsPrevBtn.classList.toggle('hidden', currentNewsIndex === 0);
+    if (newsNextBtn) {
+        const remainingWidth = trackWidth - offset;
+        newsNextBtn.classList.toggle('hidden', remainingWidth <= containerWidth + 5);
     }
+}
 
     function nextNews() {
         if (currentNewsIndex < newsCount - newsVisible) {
