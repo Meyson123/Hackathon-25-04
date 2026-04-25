@@ -227,6 +227,16 @@
 </head>
 <body>
     <div class="gradient-bg"></div>
+    <script>
+        window.userData = {
+            id: Number("{{ user.id }}"),
+            username: "{{ user.username }}",
+            email: "{{ user.email }}",
+            role: "{{ user.role }}",
+            status: "{{ user.status }}",
+            name: "{{ user.full_name }}"
+        };
+    </script>
     <div class="dashboard-container">
         <!-- Header -->
         <div class="dashboard-header">
@@ -240,7 +250,10 @@
                     <option value="week" selected>За неделю</option>
                     <option value="month">За месяц</option>
                 </select>
-                <button class="dashboard-btn">Создать пост</button>
+                <button class="dashboard-btn" type="button">Создать пост</button>
+                <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12);">
+                    <i class="bx bx-log-out"></i> Выйти
+                </button>
             </div>
         </div>
 
@@ -511,5 +524,6 @@
             });
         };
     </script>
+    <script src="/static/script.js"></script>
 </body>
 </html>

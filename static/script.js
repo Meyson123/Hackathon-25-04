@@ -37,6 +37,30 @@
         localStorage.removeItem('mh_user');
     }
 
+    /** Logout: очищаем серверную сессию + localStorage */
+    function initLogout() {
+        var logoutBtn = $('#lcLogout');
+        if (!logoutBtn) return;
+
+        logoutBtn.addEventListener('click', function (e) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+            // Реальный logout на бэкенде (очищает server-side сессию).
+            fetch('/lc/logout', {
+                method: 'POST',
+                credentials: 'same-origin'
+            })
+            .catch(function () {
+                // Даже если запрос не прошёл, локальные данные лучше очистить.
+            })
+            .finally(function () {
+                clearUser();
+                showToast('Вы вышли из системы', 'success');
+                setTimeout(function () { window.location.href = '/'; }, 600);
+            });
+        });
+    }
+
     /* ====================================================
        AUTH PAGE  (auth.html)
        ==================================================== */
@@ -214,8 +238,11 @@
 
     /* ====================================================
        LC PAGE  (lc.html)  — Личный кабинет
-       ==================================================== */    function initLC() {
+       ==================================================== */
+    function initLC() {
         var lcNav = $('#lcNav');
+        // Logout должен работать и на альтернативных дашбордах без lcNav
+        initLogout();
         if (!lcNav) return;
 
         // Пытаемся получить данные из сессии (через скрытые элементы или глобальную переменную)
@@ -277,15 +304,7 @@
             });
         });
 
-        // Выход
-        var logoutBtn = $('#lcLogout');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function () {
-                clearUser();
-                showToast('Вы вышли из системы', 'success');
-                setTimeout(function () { window.location.href = '/home'; }, 600);
-            });
-        }
+        // Выход подключён через initLogout()
     }
 
     /* ====================================================
@@ -515,6 +534,9 @@
         // home или корень
         initHome();
     }
+
+    // Фолбэк: если кнопка выхода есть на странице (любой роли) — подключаем.
+    initLogout();
     /*=============
      Из home.html 
      ==============*/

@@ -13,11 +13,18 @@ load_dotenv()
 
 app = FastAPI(title="MediaHub")
 
+# В проде нельзя стартовать с дефолтным secret: это позволяет подделывать сессии.
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is required (do not use a default value).")
+
 # Middleware для сессий
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv("SECRET_KEY", "default-secret-key-change-in-production"),
-    max_age=86400
+    secret_key=SECRET_KEY,
+    max_age=86400,
+    same_site=os.getenv("SESSION_SAMESITE", "lax"),
+    https_only=os.getenv("SESSION_HTTPS_ONLY", "0") == "1",
 )
 
 # Настройка шаблонов и статики

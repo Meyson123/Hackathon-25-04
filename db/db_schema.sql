@@ -8,7 +8,7 @@
      email TEXT UNIQUE NOT NULL,
      password_hash TEXT NOT NULL,
      full_name TEXT,
-     role TEXT CHECK(role IN ('admin', 'editor', 'observer', 'volunteer')) DEFAULT 'volunteer',
+     role TEXT CHECK(role IN ('admin', 'smm', 'editor', 'observer', 'volunteer')) DEFAULT 'volunteer',
      status TEXT CHECK(status IN ('pending', 'active', 'blocked')) DEFAULT 'pending',
      points INTEGER DEFAULT 0, -- Баллы для геймификации волонтеров
      created_at DATETIME DEFAULT CURRENT_TIMESTAMP

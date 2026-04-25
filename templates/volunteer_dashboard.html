@@ -310,20 +310,36 @@
 </head>
 <body>
     <div class="gradient-bg"></div>
+    <script>
+        window.userData = {
+            id: Number("{{ user.id }}"),
+            username: "{{ user.username }}",
+            email: "{{ user.email }}",
+            role: "{{ user.role }}",
+            status: "{{ user.status }}",
+            name: "{{ user.full_name }}"
+        };
+    </script>
     <div class="dashboard-container">
         <!-- Header & Profile -->
         <div class="dashboard-header">
             <div class="profile-section">
-                <div class="profile-avatar">АК</div>
+                <div class="profile-avatar">{{ (user.full_name or user.username)[:1] | upper }}</div>
                 <div class="profile-info">
-                    <h1>Привет, Анна! 👋</h1>
+                    <h1>Привет, {{ user.full_name or user.username }}!</h1>
                     <p>Твой вклад делает наш центр лучше</p>
                 </div>
             </div>
-            <button class="dashboard-btn">
-                <i class="bx bx-plus"></i>
-                Предложить контент
-            </button>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="dashboard-btn" type="button">
+                    <i class="bx bx-plus"></i>
+                    Предложить контент
+                </button>
+                <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12);">
+                    <i class="bx bx-log-out"></i>
+                    Выйти
+                </button>
+            </div>
         </div>
 
         <!-- Gamification Row -->
@@ -444,5 +460,6 @@
             });
         };
     </script>
+    <script src="/static/script.js"></script>
 </body>
 </html>

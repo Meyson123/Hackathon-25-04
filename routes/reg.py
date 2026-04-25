@@ -9,6 +9,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "db", "mediahub.db")
+ALLOWED_SELF_ROLES = {"volunteer", "smm"}
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -44,6 +45,11 @@ async def reg_post(
     # Проверка существующего пользователя
     conn = get_db_connection()
     try:
+        # Защита от эскалации привилегий: роль нельзя выставлять произвольно из формы.
+        # Разрешаем только self-assign роли из allowlist.
+        if role not in ALLOWED_SELF_ROLES:
+            role = "volunteer"
+
         existing_user = conn.execute(
             "SELECT id FROM users WHERE username = ? OR email = ?",
             (username, email)

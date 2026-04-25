@@ -29,24 +29,49 @@ async def lc(request: Request):
         ).fetchone()
 
         if not user:
+            request.session.clear()
+            return RedirectResponse(url="/auth", status_code=303)
+
+        # Серверная проверка статуса (не доверяем session/localStorage)
+        if str(user["status"]) != "active":
+            request.session.clear()
             return RedirectResponse(url="/auth", status_code=303)
 
         # Формирование данных для шаблона
+        full_name = None
+        try:
+            if "full_name" in user.keys():
+                full_name = user["full_name"]
+        except Exception:
+            full_name = None
+
         user_data = {
             "id": user['id'],
             "username": user['username'],
             "email": user['email'],
             "role": user['role'],
             "status": user['status'],
-            "full_name": user.get('full_name', user['username'])
+            "full_name": full_name or user["username"]
         }
 
     except Exception as e:
+        request.session.clear()
         return RedirectResponse(url="/auth", status_code=303)
     finally:
         conn.close()
 
-    return templates.TemplateResponse("lc.html", {
+    role = str(user_data.get("role") or "")
+    if role == "admin":
+        template_name = "lc.html"
+    elif role == "volunteer":
+        template_name = "volunteer_dashboard.html"
+    elif role in ("editor", "smm"):
+        template_name = "editor_dashboard.html"
+    else:
+        # Фолбэк: для остальных ролей пока отдаём общий кабинет
+        template_name = "lc.html"
+
+    return templates.TemplateResponse(template_name, {
         "request": request,
         "user": user_data
     })

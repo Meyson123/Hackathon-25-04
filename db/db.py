@@ -41,6 +41,10 @@ def init_db():
 def create_admin_user(conn):
     """Создание тестового администратора"""
     try:
+        # Создание тестового админа должно быть явным действием (только для dev).
+        if os.getenv("CREATE_TEST_ADMIN", "0") != "1":
+            return
+
         # Проверяем, существует ли уже админ
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM users WHERE username = 'admin'")
@@ -50,8 +54,10 @@ def create_admin_user(conn):
             print("Администратор уже существует.")
             return
 
-        # Хеширование пароля
-        password = "admin123"
+        # Хеширование пароля (берём из окружения, без дефолта)
+        password = os.getenv("TEST_ADMIN_PASSWORD")
+        if not password:
+            raise RuntimeError("TEST_ADMIN_PASSWORD is required when CREATE_TEST_ADMIN=1")
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
         # Создание администратора
@@ -60,9 +66,7 @@ def create_admin_user(conn):
             ("admin", "admin@mediahub.ru", hashed_password, "Администратор", "admin", "active")
         )
         conn.commit()
-        print("Тестовый администратор создан:")
-        print("  Логин: admin")
-        print("  Пароль: admin123")
+        print("Тестовый администратор создан: логин admin")
 
     except Exception as e:
         print(f"Ошибка при создании администратора: {e}")
