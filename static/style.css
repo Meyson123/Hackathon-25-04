@@ -1168,7 +1168,7 @@ body {
         /* Левый блок (40%) - Календарь */
         .calendar-section {
             width: 40%;
-            height: 80vh;
+            height: 95vh;
             padding: 20px;
             border-right: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
@@ -1195,7 +1195,7 @@ body {
             width: 100%;
             max-width: 600px;
             padding: 20px;
-            background: transparent;
+            background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.3));
             border: 2px solid rgba(255, 255, 255, 0.15);
             border-radius: 20px;
             backdrop-filter: blur(20px);
@@ -1610,53 +1610,8 @@ body {
     padding: 20px;
     border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
 }
-
-.news-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-}
-
-.news-title {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #fff;
-}
-
 .news-date {
-    font-size: 0.9rem;
-    font-weight: bold;
-    color: var(--accent-color, #00d2ff);
-}
-
-.news-desc {
-    font-size: 0.9rem;
-    color: #ffffff;
-    opacity: 1;
-    line-height: 1.4;
-    margin: 0;
-}
-
-.news-image {
-    width: 100%;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-top: auto;
-}
-
-.news-image img {
-    width: 100%;
-    height: auto;
-    max-height: 300px;
-    object-fit: contain;
-    display: block;
-    background: rgba(0, 0, 0, 0.2);
-}.news-date {
     font-size: 0.8rem;
     color: var(--accent-color, #00d2ff);
     margin-bottom: 10px;
@@ -1676,7 +1631,6 @@ body {
     color: white;
     width: 40px;
     height: 40px;
-    min-width: 40px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -1685,11 +1639,12 @@ body {
     font-size: 1.5rem;
     transition: opacity 0.3s, background 0.3s;
     z-index: 10;
-    flex-shrink: 0;
-}.carousel-btn:hover {
+}
+.carousel-btn:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 .carousel-btn.hidden {
     opacity: 0;
     pointer-events: none;
 }
+
