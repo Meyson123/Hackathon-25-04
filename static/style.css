@@ -17,7 +17,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
+    padding: 0;
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
@@ -1076,7 +1076,9 @@ body {
             display: flex;
             width: 100%;
             min-height: 95vh;
-        }        /* Шапка (5%) */        .header {
+        }        /* Шапка (5%) */        
+        
+        .header {
             height: 5vh;
             min-height: 50px;
             display: flex;
@@ -1084,7 +1086,7 @@ body {
             justify-content: space-between;
             align-self: top;
             padding: 0 30px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -1577,7 +1579,7 @@ body {
 }
 /* Лента новостей */
 .news-feed-section {
-    margin-top: 40px;
+    margin: 40px 20px;
     padding: 20px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 20px;
