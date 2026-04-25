@@ -806,14 +806,17 @@
     const newsPrevBtn = document.getElementById('newsPrevBtn');
     const newsNextBtn = document.getElementById('newsNextBtn');
     let currentNewsIndex = 0;
-    const newsCards = document.querySelectorAll('.news-card');
-    const newsCount = newsCards.length;
     const newsVisible = 2;
 
     function updateNewsCarousel() {
     if (!newsTrack) return;
     const newsCards = newsTrack.querySelectorAll('.news-card');
-    if (newsCards.length === 0) return;
+    const newsCount = newsCards.length;
+    if (newsCount === 0) {
+        if (newsPrevBtn) newsPrevBtn.classList.add('hidden');
+        if (newsNextBtn) newsNextBtn.classList.add('hidden');
+        return;
+    }
 
     const cardWidth = newsCards[0].offsetWidth;
     const gap = 20; // Соответствует gap в CSS
@@ -832,6 +835,13 @@
 }
 
     function nextNews() {
+        if (!newsTrack) return;
+        const newsCount = newsTrack.querySelectorAll('.news-card').length;
+        if (newsCount <= newsVisible) {
+            currentNewsIndex = 0;
+            updateNewsCarousel();
+            return;
+        }
         if (currentNewsIndex < newsCount - newsVisible) {
             currentNewsIndex += newsVisible;
             if (currentNewsIndex > newsCount - newsVisible) {

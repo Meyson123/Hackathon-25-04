@@ -76,56 +76,38 @@
                 <div class="news-track-wrapper">
                     <div class="news-track" id="newsTrack">
                         <!-- Карточки новостей -->
-                         <div class="news-card">
-                            <div class="news-header">
-                                <h3 class="news-title">Открытие нового коворкинга</h3>
-                                <span class="news-date">25.04.2025</span>
+                        {% if news_posts and news_posts|length > 0 %}
+                            {% for p in news_posts %}
+                                <div class="news-card">
+                                    <div class="news-header">
+                                        <h3 class="news-title">{{ p.title }}</h3>
+                                        <span class="news-date">
+                                            {% if p.published_at %}
+                                                {{ p.published_at[:10] }}
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <p class="news-desc">
+                                        {{ (p.content or '')[:160] }}{% if p.content and (p.content|length) > 160 %}...{% endif %}
+                                    </p>
+                                    {% if p.image_url %}
+                                        <div class="news-image">
+                                            <img src="{{ p.image_url }}" alt="Новость" onerror="this.style.display='none'">
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="news-card">
+                                <div class="news-header">
+                                    <h3 class="news-title">Новостей пока нет</h3>
+                                    <span class="news-date">—</span>
+                                </div>
+                                <p class="news-desc">Опубликуйте пост из кабинета SMM/Editor — и он появится здесь.</p>
                             </div>
-                            <p class="news-desc">Приглашаем всех на торжественное открытие пространства для работы и творчества.</p>
-                            <div class="news-image">
-                                <img src="../files/test_img_newscard.JPG" alt="Коворкинг" onerror="this.style.display='none'">
-                            </div>
-                        </div>
-                        <div class="news-card">
-                            <div class="news-header">
-                                <h3 class="news-title">Итоги хакатона</h3>
-                                <span class="news-date">24.04.2025</span>
-                            </div>
-                            <p class="news-desc">Поздравляем победителей весеннего хакатона Kodik AI!</p>
-                            <div class="news-image">
-                                <img src="../files/hackathon.jpg" alt="Хакатон" onerror="this.style.display='none'">
-                            </div>
-                        </div>
-                        <div class="news-card">
-                            <div class="news-header">
-                                <h3 class="news-title">Мастер-класс по SMM</h3>
-                                <span class="news-date">23.04.2025</span>
-                            </div>
-                            <p class="news-desc">Узнайте, как продвигать молодежные проекты в социальных сетях.</p>
-                            <div class="news-image">
-                                <img src="../files/smm.jpg" alt="SMM" onerror="this.style.display='none'">
-                            </div>
-                        </div>
-                        <div class="news-card">
-                            <div class="news-header">
-                                <h3 class="news-title">Волонтерский сбор</h3>
-                                <span class="news-date">22.04.2025</span>
-                            </div>
-                            <p class="news-desc">Собираем команду для организации летнего фестиваля.</p>
-                            <div class="news-image">
-                                <img src="../files/volunteers.jpg" alt="Волонтеры" onerror="this.style.display='none'">
-                            </div>
-                        </div>
-                        <div class="news-card">
-                            <div class="news-header">
-                                <h3 class="news-title">Новые курсы дизайна</h3>
-                                <span class="news-date">21.04.2025</span>
-                            </div>
-                            <p class="news-desc">Записывайтесь на бесплатные курсы графического дизайна.</p>
-                            <div class="news-image">
-                                <img src="../files/design.jpg" alt="Дизайн" onerror="this.style.display='none'">
-                            </div>
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 <button class="carousel-btn next" id="newsNextBtn"><i class='bx bx-chevron-right'></i></button>            </div>

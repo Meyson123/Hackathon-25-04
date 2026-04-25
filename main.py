@@ -30,14 +30,16 @@ app.add_middleware(
 # Настройка шаблонов и статики
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/files", StaticFiles(directory="files"), name="files")
 
 # Подключение роутеров
-from routes import home, reg, auth, lc
+from routes import home, reg, auth, lc, posts
 
 app.include_router(home.router, tags=["home"])
 app.include_router(reg.router, tags=["registration"])
 app.include_router(auth.router, tags=["authentication"])
 app.include_router(lc.router, tags=["personal_cabinet"])
+app.include_router(posts.router, tags=["posts"])
 
 # Визуализация
 @app.get("/viz")

@@ -814,24 +814,24 @@
                 submitBtn.disabled = true;
 
                 try {
-                    // В реальности здесь будет fetch('/api/admin/create-post', ...)
-                    // Но так как бэк трогать нельзя, имитируем успешную отправку для фронта
-                    console.log('Отправка данных поста:', Object.fromEntries(formData));
-                    
-                    setTimeout(() => {
-                        alert('Пост успешно запланирован!');
-                        postForm.reset();
-                        imagePreview.style.display = 'none';
-                        postModal.style.display = 'none';
-                        submitBtn.innerText = originalText;
-                        submitBtn.disabled = false;
-                        
-                        // Обновляем счетчик запланированных (для красоты)
-                        const scheduledCount = document.querySelector('.stat-card.border-blue .stat-value');
-                        scheduledCount.innerText = parseInt(scheduledCount.innerText) + 1;
-                    }, 1000);
+                    const resp = await fetch('/api/posts', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => null);
+                    if (!resp.ok || !data || !data.ok) {
+                        throw new Error((data && (data.detail || data.error)) || 'Ошибка публикации');
+                    }
+
+                    alert(data.status === 'published' ? 'Пост опубликован!' : 'Пост запланирован!');
+                    postForm.reset();
+                    imagePreview.style.display = 'none';
+                    postModal.style.display = 'none';
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
                 } catch (error) { 
-                    alert('Ошибка соединения.');
+                    alert(error && error.message ? error.message : 'Ошибка соединения.');
                     submitBtn.innerText = originalText;
                     submitBtn.disabled = false;
                 }

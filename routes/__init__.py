@@ -1,4 +1,4 @@
 # Роутеры приложения
-from . import home, reg, auth, lc
+from . import home, reg, auth, lc, posts
 
-__all__ = ["home", "reg", "auth", "lc"]
+__all__ = ["home", "reg", "auth", "lc", "posts"]
