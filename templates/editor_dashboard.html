@@ -526,6 +526,12 @@
                     </div>
                     <img id="imagePreview" src="#" alt="Предпросмотр">
                 </div>
+                {% if user.role == "smm" %}
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <input type="checkbox" id="postToVk" name="post_to_vk" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="postToVk" style="margin-bottom: 0; cursor: pointer;">Запостить в VK</label>
+                    </div>
+                {% endif %}
                 <button type="submit" class="dashboard-btn" style="width: 100%; justify-content: center;">
                     Опубликовать пост
                 </button>

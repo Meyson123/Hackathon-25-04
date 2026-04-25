@@ -8,8 +8,10 @@ from dotenv import load_dotenv
 import uvicorn
 import os
 
-# Загрузка переменных окружения
-load_dotenv()
+# Загрузка переменных окружения (путь относительно корня проекта, не от cwd процесса)
+_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Переменные из файла .env в корне проекта должны иметь приоритет над пустыми/устаревшими значениями в окружении ОС.
+load_dotenv(os.path.join(_ROOT_DIR, ".env"), override=True)
 
 app = FastAPI(title="MediaHub")
 
