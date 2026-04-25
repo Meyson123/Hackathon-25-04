@@ -263,7 +263,7 @@
                 <button class="dashboard-btn secondary" onclick="refreshStats()">
                     <i class="bx bx-refresh"></i> Обновить
                 </button>
-                <button class="dashboard-btn" onclick="window.location.href='/lc/logout'">
+                <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12);">
                     <i class="bx bx-log-out"></i> Выйти
                 </button>
             </div>
@@ -868,5 +868,6 @@
         // Загрузка при старте
         document.addEventListener('DOMContentLoaded', loadStats);
     </script>
+    <script src="/static/script.js"></script>
 </body>
 </html>
