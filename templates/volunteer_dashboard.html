@@ -296,6 +296,38 @@
             padding: 25px;
             backdrop-filter: blur(10px);
         }
+        .pagination-controls {
+            display: flex;
+            gap: 5px;
+        }
+        .pagination-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background: rgba(168, 85, 247, 0.3);
+            color: #fff;
+        }
+        .pagination-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .status-badge.scheduled {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+        .status-badge.draft {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+        }
         .modal {
             display: none;
             position: fixed;
@@ -452,9 +484,9 @@
                 <div class="level-info">
                     <div>
                         <div class="level-label">Твой уровень: <span>Активист</span></div>
-                        <div class="level-value">2,450 <span>баллов</span></div>
+                        <div class="level-value"><span id="userPoints">0</span> <span>баллов</span></div>
                     </div>
-                    <div class="level-subtext">До уровня "Амбассадор" осталось 550</div>
+                    <div class="level-subtext">До уровня "Амбассадор" осталось <span id="pointsToNext">550</span></div>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: 75%"></div>
@@ -470,38 +502,29 @@
                     <i class="bx bx-star"></i>
                 </div>
                 <div class="ranking-label">Место в рейтинге</div>
-                <div class="ranking-value">#4</div>
-                <div class="ranking-subtext">среди 30 волонтеров</div>
+                <div class="ranking-value">#<span id="userRank">-</span></div>
+                <div class="ranking-subtext">среди <span id="totalVolunteers">-</span> волонтеров</div>
             </div>
         </div>
 
         <div class="content-grid">
             <!-- Мои публикации -->
             <div class="content-card">
-                <h4 class="card-title">Мои материалы</h4>
-                <div class="material-item">
-                    <div class="material-info">
-                        <div class="material-icon">📸</div>
-                        <div class="material-details">
-                            <h4>Фотоотчет с субботника</h4>
-                            <p>Отправлено вчера в 18:30</p>
-                        </div>
-                    </div>
-                    <div class="material-status">
-                        <span class="status-badge pending">На проверке</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h4 class="card-title" style="margin: 0;">Мои материалы</h4>
+                    <div class="pagination-controls">
+                        <button id="prevPosts" class="pagination-btn" disabled>
+                            <i class="bx bx-chevron-up"></i>
+                        </button>
+                        <button id="nextPosts" class="pagination-btn">
+                            <i class="bx bx-chevron-down"></i>
+                        </button>
                     </div>
                 </div>
-                <div class="material-item">
-                    <div class="material-info">
-                        <div class="material-icon">📝</div>
-                        <div class="material-details">
-                            <h4>Пост про новый коворкинг</h4>
-                            <p>Опубликовано 24.04.2024</p>
-                        </div>
-                    </div>
-                    <div class="material-status">
-                        <span class="status-badge published">Опубликовано</span>
-                        <div class="points-badge">+150 баллов</div>
+                <div id="myPostsContainer">
+                    <!-- Посты будут загружены динамически -->
+                    <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.5);">
+                        Загрузка материалов...
                     </div>
                 </div>
             </div>
@@ -567,7 +590,168 @@
     </div>
 
     <script>
+        let currentOffset = 0;
+        const postsPerPage = 3;
+        let totalPosts = 0;
+
+        // Загрузка постов пользователя
+        async function loadMyPosts(offset = 0) {
+            try {
+                const response = await fetch(`/api/posts/my?limit=${postsPerPage}&offset=${offset}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    totalPosts = data.total;
+                    currentOffset = offset;
+                    renderPosts(data.posts);
+                    updatePaginationButtons();
+                }
+            } catch (error) {
+                console.error('Error loading posts:', error);
+            }
+        }
+
+        // Отрисовка постов
+        function renderPosts(posts) {
+            const container = document.getElementById('myPostsContainer');
+
+            if (posts.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.5);">
+                        У вас пока нет материалов. <br>
+                        <button onclick="document.getElementById('openContentModal').click()" style="margin-top: 10px; background: rgba(168, 85, 247, 0.3); border: none; padding: 8px 16px; border-radius: 8px; color: #fff; cursor: pointer;">
+                            Предложить первый материал
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = posts.map(post => {
+                const statusLabels = {
+                    'pending_review': 'На проверке',
+                    'published': 'Опубликовано',
+                    'scheduled': 'Запланировано',
+                    'draft': 'Черновик'
+                };
+
+                const statusClass = post.status;
+
+                // Форматируем дату
+                const date = new Date(post.created_at);
+                const formattedDate = date.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // Определяем иконку на основе наличия медиа
+                const icon = post.media && post.media.length > 0 ? '📸' : '📝';
+
+                return `
+                    <div class="material-item">
+                        <div class="material-info">
+                            <div class="material-icon">${icon}</div>
+                            <div class="material-details">
+                                <h4>${post.title}</h4>
+                                <p>${formattedDate}</p>
+                            </div>
+                        </div>
+                        <div class="material-status">
+                            <span class="status-badge ${statusClass}">${statusLabels[post.status] || post.status}</span>
+                            ${post.status === 'published' ? '<div class="points-badge">+10 баллов</div>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Обновление кнопок пагинации
+        function updatePaginationButtons() {
+            const prevBtn = document.getElementById('prevPosts');
+            const nextBtn = document.getElementById('nextPosts');
+
+            prevBtn.disabled = currentOffset === 0;
+            nextBtn.disabled = currentOffset + postsPerPage >= totalPosts;
+        }
+
+        // Обработчики кнопок пагинации
+        document.getElementById('prevPosts').addEventListener('click', () => {
+            if (currentOffset > 0) {
+                loadMyPosts(currentOffset - postsPerPage);
+            }
+        });
+
+        document.getElementById('nextPosts').addEventListener('click', () => {
+            if (currentOffset + postsPerPage < totalPosts) {
+                loadMyPosts(currentOffset + postsPerPage);
+            }
+        });
+
+        // Загрузка баллов пользователя
+        async function loadUserPoints() {
+            try {
+                const response = await fetch('/api/user/points');
+                if (response.ok) {
+                    const data = await response.json();
+                    const pointsElement = document.getElementById('userPoints');
+                    const pointsToNextElement = document.getElementById('pointsToNext');
+
+                    if (pointsElement) {
+                        pointsElement.textContent = data.points.toLocaleString('ru-RU');
+                    }
+
+                    // Вычисляем баллы до следующего уровня (3000 - текущие баллы)
+                    const nextLevel = 3000;
+                    const pointsToNext = Math.max(0, nextLevel - data.points);
+                    if (pointsToNextElement) {
+                        pointsToNextElement.textContent = pointsToNext.toLocaleString('ru-RU');
+                    }
+
+                    // Обновляем прогресс-бар
+                    const progressFill = document.querySelector('.progress-fill');
+                    if (progressFill) {
+                        const progress = Math.min(100, (data.points / nextLevel) * 100);
+                        progressFill.style.width = `${progress}%`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user points:', error);
+            }
+        }
+
+        // Загрузка рейтинга пользователя
+        async function loadUserRanking() {
+            try {
+                const response = await fetch('/api/user/ranking');
+                if (response.ok) {
+                    const data = await response.json();
+                    const rankElement = document.getElementById('userRank');
+                    const totalElement = document.getElementById('totalVolunteers');
+
+                    if (rankElement) {
+                        rankElement.textContent = data.rank;
+                    }
+                    if (totalElement) {
+                        totalElement.textContent = data.total;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user ranking:', error);
+            }
+        }
+
         window.onload = function() {
+            // Загружаем посты пользователя
+            loadMyPosts();
+
+            // Загружаем баллы пользователя
+            loadUserPoints();
+
+            // Загружаем рейтинг пользователя
+            loadUserRanking();
+
             // Chart initialization
             new Chart(document.getElementById('volunteerActivityChart'), {
                 type: 'line',
@@ -619,20 +803,25 @@
             form.onsubmit = async (e) => {
                 e.preventDefault();
                 const formData = new FormData(form);
-                
+
                 try {
-                    const response = await fetch('/api/suggest-content', {
+                    const response = await fetch('/api/posts', {
                         method: 'POST',
                         body: formData
                     });
-                    
+
                     if (response.ok) {
                         alert('Контент успешно отправлен на модерацию!');
                         form.reset();
                         imagePreview.style.display = 'none';
                         modal.style.display = 'none';
+                        // Обновляем список постов, баллы и рейтинг
+                        loadMyPosts();
+                        loadUserPoints();
+                        loadUserRanking();
                     } else {
-                        alert('Ошибка при отправке. Попробуйте позже.');
+                        const error = await response.json();
+                        alert('Ошибка при отправке: ' + (error.detail || 'Попробуйте позже.'));
                     }
                 } catch (error) {
                     console.error('Error:', error);
