@@ -91,6 +91,13 @@
                                     <p class="news-desc">
                                         {{ (p.content or '')[:160] }}{% if p.content and (p.content|length) > 160 %}...{% endif %}
                                     </p>
+                                    {% if p.tags and p.tags|length > 0 %}
+                                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;">
+                                            {% for tag in p.tags %}
+                                                <span style="display: inline-block; padding: 4px 10px; background: rgba(128, 128, 128, 0.2); border: 1px solid rgba(128, 128, 128, 0.4); border-radius: 12px; font-size: 11px; color: rgba(255, 255, 255, 0.7);">{{ tag }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
                                     {% if p.image_url %}
                                         <div class="news-image">
                                             <img src="{{ p.image_url }}" alt="Новость" onerror="this.style.display='none'">

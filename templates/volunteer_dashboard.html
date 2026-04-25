@@ -595,6 +595,13 @@
                     </div>
                     <img id="imagePreview" src="#" alt="Предпросмотр">
                 </div>
+                <div class="form-group">
+                    <label>Теги</label>
+                    <div id="tagsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                        <!-- Теги будут загружены динамически -->
+                    </div>
+                    <input type="hidden" id="selectedTags" name="tags" value="">
+                </div>
                 <button type="submit" class="dashboard-btn" style="width: 100%; justify-content: center;">
                     Отправить на модерацию
                 </button>
@@ -662,6 +669,16 @@
                 // Определяем иконку на основе наличия медиа
                 const icon = post.media && post.media.length > 0 ? '📸' : '📝';
 
+                // Формируем HTML для тегов
+                let tagsHtml = '';
+                if (post.tags && post.tags.length > 0) {
+                    tagsHtml = '<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">';
+                    post.tags.forEach(tag => {
+                        tagsHtml += `<span style="display: inline-block; padding: 4px 10px; background: rgba(128, 128, 128, 0.2); border: 1px solid rgba(128, 128, 128, 0.4); border-radius: 12px; font-size: 11px; color: rgba(255, 255, 255, 0.7);">${tag}</span>`;
+                    });
+                    tagsHtml += '</div>';
+                }
+
                 return `
                     <div class="material-item">
                         <div class="material-info">
@@ -669,6 +686,7 @@
                             <div class="material-details">
                                 <h4>${post.title}</h4>
                                 <p>${formattedDate}</p>
+                                ${tagsHtml}
                             </div>
                         </div>
                         <div class="material-status">
@@ -810,6 +828,76 @@
                     imagePreview.src = URL.createObjectURL(file);
                     imagePreview.style.display = 'block';
                 }
+            };
+
+            // Загрузка тегов
+            async function loadTags() {
+                try {
+                    const response = await fetch('/api/tags');
+                    const data = await response.json();
+                    const tagsContainer = document.getElementById('tagsContainer');
+                    const selectedTagsInput = document.getElementById('selectedTags');
+                    const selectedTags = new Set();
+
+                    if (data.tags) {
+                        tagsContainer.innerHTML = '';
+                        data.tags.forEach(tag => {
+                            const tagElement = document.createElement('div');
+                            tagElement.className = 'tag-checkbox';
+                            tagElement.style.cssText = `
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                                padding: 6px 12px;
+                                background: rgba(255, 255, 255, 0.1);
+                                border: 1px solid rgba(255, 255, 255, 0.2);
+                                border-radius: 20px;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                font-size: 13px;
+                                color: rgba(255, 255, 255, 0.8);
+                            `;
+
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.value = tag.name;
+                            checkbox.style.cssText = 'width: 16px; height: 16px; cursor: pointer;';
+
+                            const label = document.createElement('span');
+                            label.textContent = tag.name;
+
+                            tagElement.appendChild(checkbox);
+                            tagElement.appendChild(label);
+
+                            tagElement.onclick = (e) => {
+                                if (e.target !== checkbox) {
+                                    checkbox.checked = !checkbox.checked;
+                                }
+                                if (checkbox.checked) {
+                                    selectedTags.add(tag.name);
+                                    tagElement.style.background = 'rgba(168, 85, 247, 0.3)';
+                                    tagElement.style.borderColor = 'rgba(168, 85, 247, 0.6)';
+                                } else {
+                                    selectedTags.delete(tag.name);
+                                    tagElement.style.background = 'rgba(255, 255, 255, 0.1)';
+                                    tagElement.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                                }
+                                selectedTagsInput.value = Array.from(selectedTags).join(',');
+                            };
+
+                            tagsContainer.appendChild(tagElement);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading tags:', error);
+                }
+            }
+
+            // Загружаем теги при открытии модального окна
+            const originalOpenModalHandler = openBtn.onclick;
+            openBtn.onclick = function() {
+                originalOpenModalHandler();
+                loadTags();
             };
 
             // Form submission

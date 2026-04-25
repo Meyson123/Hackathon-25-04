@@ -272,13 +272,20 @@
                 </div>
             </div>
             <div class="dashboard-controls">
+                <button class="dashboard-btn secondary" onclick="document.getElementById('importInput').click()">
+    <i class="bx bx-upload"></i> Импорт
+</button>
+<input type="file" id="importInput" style="display: none;" onchange="handleImport(this)">
                 <button class="dashboard-btn secondary" onclick="exportReport()">
                     <i class="bx bx-download"></i> Отчёт
                 </button>
-                <button class="dashboard-btn secondary" onclick="refreshStats()">
-                    <i class="bx bx-refresh"></i> Обновить
-                </button>                <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12);">
-                    <i class="bx bx-log-out"></i> Выйти
+                <button class="dashboard-btn secondary" onclick="refreshStats()" style="min-width: 40px;
+            height: 40px;">
+                    <i class="bx bx-refresh"></i> 
+                </button>                
+                <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12); min-width: 40px;
+            height: 40px; border: 1px solid rgba(255, 255, 255, 0.2);;">
+                    <i class="bx bx-log-out"></i> 
                 </button>
             </div>
         </div>

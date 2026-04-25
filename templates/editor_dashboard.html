@@ -392,6 +392,9 @@
                     <option value="month">За месяц</option>
                 </select>
                 <button class="dashboard-btn" type="button" id="openPostModal">Создать пост</button>
+                <button class="dashboard-btn" type="button" onclick="exportReport()" style="background: rgba(255,255,255,0.12);">
+                    <i class="bx bx-download"></i> Отчёт
+                </button>
                 <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12);">
                     <i class="bx bx-log-out"></i> Выйти
                 </button>
@@ -511,12 +514,6 @@
                     </div>
                     <img id="imagePreview" src="#" alt="Предпросмотр">
                 </div>
-                {% if user.role == "smm" %}
-                    <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                        <input type="checkbox" id="postToVk" name="post_to_vk" value="1" style="width: 18px; height: 18px; cursor: pointer;">
-                        <label for="postToVk" style="margin-bottom: 0; cursor: pointer;">Запостить в VK</label>
-                    </div>
-                {% endif %}
                 <button type="submit" class="dashboard-btn" style="width: 100%; justify-content: center;">
                     Опубликовать пост
                 </button>
@@ -658,12 +655,27 @@
                         return;
                     }
 
+
                     data.posts.forEach(post => {
                         const row = document.createElement('tr');
                         row.id = `row-${post.id}`;
+
+                        // Формируем HTML для тегов
+                        let tagsHtml = '';
+                        if (post.tags && post.tags.length > 0) {
+                            tagsHtml = '<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">';
+                            post.tags.forEach(tag => {
+                                tagsHtml += `<span style="display: inline-block; padding: 4px 10px; background: rgba(128, 128, 128, 0.2); border: 1px solid rgba(128, 128, 128, 0.4); border-radius: 12px; font-size: 11px; color: rgba(255, 255, 255, 0.7);">${tag}</span>`;
+                            });
+                            tagsHtml += '</div>';
+                        }
+
                         row.innerHTML = `
                             <td>${post.author_name} (${post.author_role})</td>
-                            <td>${post.title}</td>
+                            <td>
+                                <div>${post.title}</div>
+                                ${tagsHtml}
+                            </td>
                             <td>${post.content.substring(0, 50)}...</td>
                             <td><span class="status-badge pending">На проверке</span></td>
                             <td>
@@ -857,6 +869,76 @@
                 };
             }
 
+            // Загрузка тегов
+            async function loadTags() {
+                try {
+                    const response = await fetch('/api/tags');
+                    const data = await response.json();
+                    const tagsContainer = document.getElementById('tagsContainer');
+                    const selectedTagsInput = document.getElementById('selectedTags');
+                    const selectedTags = new Set();
+
+                    if (data.tags) {
+                        tagsContainer.innerHTML = '';
+                        data.tags.forEach(tag => {
+                            const tagElement = document.createElement('div');
+                            tagElement.className = 'tag-checkbox';
+                            tagElement.style.cssText = `
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                                padding: 6px 12px;
+                                background: rgba(255, 255, 255, 0.1);
+                                border: 1px solid rgba(255, 255, 255, 0.2);
+                                border-radius: 20px;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                font-size: 13px;
+                                color: rgba(255, 255, 255, 0.8);
+                            `;
+
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.value = tag.name;
+                            checkbox.style.cssText = 'width: 16px; height: 16px; cursor: pointer;';
+
+                            const label = document.createElement('span');
+                            label.textContent = tag.name;
+
+                            tagElement.appendChild(checkbox);
+                            tagElement.appendChild(label);
+
+                            tagElement.onclick = (e) => {
+                                if (e.target !== checkbox) {
+                                    checkbox.checked = !checkbox.checked;
+                                }
+                                if (checkbox.checked) {
+                                    selectedTags.add(tag.name);
+                                    tagElement.style.background = 'rgba(168, 85, 247, 0.3)';
+                                    tagElement.style.borderColor = 'rgba(168, 85, 247, 0.6)';
+                                } else {
+                                    selectedTags.delete(tag.name);
+                                    tagElement.style.background = 'rgba(255, 255, 255, 0.1)';
+                                    tagElement.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                                }
+                                selectedTagsInput.value = Array.from(selectedTags).join(',');
+                            };
+
+                            tagsContainer.appendChild(tagElement);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading tags:', error);
+                }
+            }
+
+            // Загружаем теги при открытии модального окна
+            const originalOpenPostModalHandler = openPostModalHandler;
+            openPostModalHandler = function() {
+                originalOpenPostModalHandler();
+                loadTags();
+            };
+
             // Submit Post Form
             postForm.onsubmit = async (e) => {
                 e.preventDefault();
@@ -940,6 +1022,42 @@
                 }
             };
         };
+
+        // Экспорт отчета в PDF (глобальная функция)
+        async function exportReport() {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bx bx-loader-alt"></i> Генерация...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/editor/report');
+
+                if (response.ok) {
+                    // Создаем blob из ответа
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `medihub_posts_report_${new Date().toISOString().slice(0,10)}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert('Ошибка при генерации отчета');
+                }
+            } catch (error) {
+                console.error('Error exporting report:', error);
+                alert('Произошла ошибка при генерации отчета');
+            }
+
+            // Восстанавливаем кнопку через 3 секунды
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bx bx-download"></i> Отчёт';
+                btn.disabled = false;
+            }, 3000);
+        }
     </script>
 
     <script src="/static/script.js"></script>

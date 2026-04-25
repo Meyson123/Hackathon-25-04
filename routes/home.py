@@ -38,7 +38,22 @@ async def home(request: Request):
             """
         ).fetchall()
 
-        news_posts = [dict(r) for r in rows]
+        news_posts = []
+        for row in rows:
+            post_dict = dict(row)
+            # Получаем теги для поста
+            tags = conn.execute(
+                """
+                SELECT t.name
+                FROM tags t
+                JOIN post_tags pt ON t.id = pt.tag_id
+                WHERE pt.post_id = ?
+                ORDER BY t.name
+                """,
+                (post_dict["id"],)
+            ).fetchall()
+            post_dict["tags"] = [tag["name"] for tag in tags]
+            news_posts.append(post_dict)
     except Exception:
         news_posts = []
     finally:

@@ -39,8 +39,12 @@
                 </div>
 
                 <button type="submit" class="auth-btn" id="loginBtn">Авторизоваться</button>
+                <div class="auth-row" style="margin-top: 15px; justify-content: flex-start; gap: 10px;">
+                    <input type="checkbox" id="loginConsent">
+                    <label for="loginConsent" style="font-size: 0.85rem; cursor: pointer;">Даю согласие на обработку персональных данных</label>
+                </div>
+                <div class="auth-error" id="loginConsentError" style="display: block; color: #ff4d4d; margin-top: 5px;"></div>
             </form>
-
             <div class="auth-footer">
                 <p>Нет аккаунта? <a href="#" id="goToReg">Зарегистрироваться</a></p>
             </div>
@@ -97,8 +101,12 @@
                 <div class="auth-error" id="regPassword2Error"></div>
 
                 <button type="submit" class="auth-btn" id="regBtn">Зарегистрироваться</button>
+                <div class="auth-row" style="margin-top: 15px; justify-content: flex-start; gap: 10px;">
+                    <input type="checkbox" id="regConsent">
+                    <label for="regConsent" style="font-size: 0.85rem; cursor: pointer;">Даю согласие на обработку персональных данных</label>
+                </div>
+                <div class="auth-error" id="regConsentError" style="display: block; color: #ff4d4d; margin-top: 5px;"></div>
             </form>
-
             <div class="auth-footer">
                 <p>Уже есть аккаунт? <a href="#" id="goToLogin">Войти</a></p>
             </div>
