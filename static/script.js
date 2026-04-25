@@ -109,10 +109,7 @@
 
                 if (!ok) return;
 
-                // Имитация авторизации (фронт-заглушка)
-                // В реальности здесь будет fetch к бэкенду
-                var demoUsers = {
-                    'admin': { name: 'Администратор', role: 'admin', status: 'active' },
+                var demoUsers = {                    'admin': { name: 'Администратор', role: 'admin', status: 'active' },
                     'smm':   { name: 'СММ-менеджер',  role: 'smm',   status: 'active' },
                     'vol':   { name: 'Волонтёр',      role: 'volunteer', status: 'active' }
                 };
@@ -158,15 +155,8 @@
         if (roleInput) roleInput.value = role;
         if (roleLabel) roleLabel.textContent = roleLabels[role] || 'Не выбрана';
 
-        // ВРЕМЕННО: для демонстрации убираем перенаправление если роль не выбрана
-        // if (!role) {
-        //     showToast('Сначала выберите роль', 'error');
-        //     setTimeout(function () { window.location.href = '/auth'; }, 1500);
-        //     return;
-        // }
-
-        regForm.addEventListener('submit', function (e) {
-            e.preventDefault();
+        // Регистрация
+        regForm.addEventListener('submit', function (e) {            e.preventDefault();
             var ok = true;
 
             var name = $('#regName').value.trim();
@@ -202,13 +192,7 @@
 
         var user = getUser();
 
-        // ВРЕМЕННО: для демонстрации без бэкенда используем демо-пользователя
-        if (!user) {
-            user = { username: 'demo', name: 'Демонстрационный пользователь', role: 'admin', status: 'active' };
-        }
-
-        // Заполнить сайдбар
-        var avatar = $('#lcAvatar');
+        // Заполнить сайдбар        var avatar = $('#lcAvatar');
         var nameEl = $('#lcName');
         var roleEl = $('#lcRole');
         var profileName = $('#profileName');
