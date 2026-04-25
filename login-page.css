@@ -1,0 +1,220 @@
+/* ===========================================
+   ОСНОВНЫЕ ПРИНЦИПЫ СТИЛЕЙ (СТРАНИЦА АВТОРИЗАЦИИ)
+   =========================================== */
+
+/* 1. ГЛОБАЛЬНЫЙ СБРОС */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* 2. БАЗОВЫЙ ФОН СТРАНИЦЫ */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4c1d95 60%, #2e1065 100%);
+    background-attachment: fixed;
+    padding: 20px;
+}
+
+/* 3. КАРТОЧКА-ОБЁРТКА */
+.wrapper {
+    width: 420px;
+    max-width: 100%;
+    color: #fff;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 255, 255, 0.05);
+    padding: 30px 40px;
+}
+
+/* 4. ЗАГОЛОВОК */
+.wrapper h1 {
+    font-size: 36px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+/* 5. КОНТЕЙНЕР ПОЛЯ ВВОДА */
+.wrapper .input-box {
+    width: 100%;
+    height: 50px;
+    margin: 30px 0;
+    position: relative;
+}
+
+/* 6. САМО ПОЛЕ ВВОДА */
+.input-box input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    outline: none;
+    border-radius: 40px;
+    font-size: 17px;
+    color: #fff;
+    padding: 20px 45px 20px 20px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Состояние фокуса */
+.input-box input:focus {
+    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+}
+
+/* Текст-подсказка (placeholder) */
+.input-box input::placeholder {
+    color: rgba(255, 255, 255, 0.8);
+    opacity: 1; /* сброс для Firefox */
+    font-weight: 400;
+}
+
+/* Автозаполнение — сохраняем прозрачный фон */
+.input-box input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+    -webkit-text-fill-color: #fff !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* 7. ИКОНКА ВНУТРИ ПОЛЯ */
+.input-box i {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 23px;
+    color: rgba(255, 255, 255, 0.9);
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+/* Иконка при фокусе на поле */
+.input-box input:focus ~ i {
+    color: #ffffff;
+}
+
+/* 8. БЛОК «ЗАПОМНИТЬ МЕНЯ» И «ЗАБЫЛИ ПАРОЛЬ?» */
+.wrapper .remember {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    margin: -15px 0 15px;
+}
+
+/* Чекбокс */
+.remember label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #fff;
+    user-select: none;
+}
+
+.remember label input {
+    accent-color: #fff;
+    margin-right: 6px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Ссылка */
+.remember a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.2s ease;
+}
+
+.remember a:hover {
+    text-decoration: underline;
+    opacity: 0.9;
+}
+
+/* 9. КНОПКА ОТПРАВКИ */
+.wrapper .btn {
+    width: 100%;
+    height: 45px;
+    background: #fff;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    font-size: 17px;
+    color: #243224;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+}
+
+/* При наведении */
+.wrapper .btn:hover {
+    background: #ffffff;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 5px 15px rgba(0, 0, 0, 0.4);
+    transform: scale(1.02);
+}
+
+/* При нажатии */
+.wrapper .btn:active {
+    background: #e5e5e5;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+    transform: scale(0.98);
+}
+
+/* 10. ССЫЛКА НА РЕГИСТРАЦИЮ */
+.wrapper .register-link {
+    font-size: 15px;
+    text-align: center;
+    margin-top: 20px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.register-link p {
+    margin: 0;
+}
+
+.register-link p a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    margin-left: 4px;
+    transition: text-shadow 0.2s ease;
+}
+
+.register-link p a:hover {
+    text-decoration: underline;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+}
+
+/* 11. АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ */
+@media (max-width: 460px) {
+    .wrapper {
+        padding: 25px 20px;
+    }
+
+    .wrapper h1 {
+        font-size: 28px;
+    }
+
+    .input-box input {
+        font-size: 16px;
+        padding: 20px 40px 20px 18px;
+    }
+
+    .remember {
+        font-size: 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
