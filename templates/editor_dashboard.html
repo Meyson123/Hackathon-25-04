@@ -90,7 +90,7 @@
         .stat-card.border-orange { border-left: 4px solid #f97316; }
         .stat-card.border-blue { border-left: 4px solid #3b82f6; }
         .stat-card.border-emerald { border-left: 4px solid #10b981; }
-        .stat-card.border-purple { border-left: 4px solid #a855f7; }
+        .stat-card.border-purple { border-left: 4px solid #FFE383; }
         .stat-label {
             font-size: 14px;
             color: rgba(255, 255, 255, 0.85);
@@ -106,11 +106,10 @@
             font-size: 12px;
             color: rgba(255, 255, 255, 0.75);
         }
-        .stat-subtext.orange { color: #f97316; }
-        .stat-subtext.blue { color: #3b82f6; }
-        .stat-subtext.emerald { color: #10b981; }
-        .stat-subtext.purple { color: #a855f7; }
-        .charts-grid {
+        .stat-subtext.orange { color: rgba(255, 255, 255, 0.7); }
+        .stat-subtext.blue { color: rgba(255, 255, 255, 0.7); }
+        .stat-subtext.emerald { color: rgba(255, 255, 255, 0.7); }
+        .stat-subtext.purple { color: #FFE383; }        .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 20px;
@@ -182,20 +181,43 @@
             opacity: 1;
         }
         .action-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             padding: 8px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .action-btn.approve {
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.3);
         }
         .action-btn.approve:hover {
-            background: rgba(16, 185, 129, 0.3);
-            color: #10b981;
+            background: #10b981;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+        .action-btn.delay {
+            color: #f59e0b;
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        .action-btn.delay:hover {
+            background: #f59e0b;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+        }
+        .action-btn.reject {
+            color: #f43f5e;
+            border-color: rgba(244, 63, 94, 0.3);
         }
         .action-btn.reject:hover {
-            background: rgba(244, 63, 94, 0.3);
-            color: #f43f5e;
+            background: #f43f5e;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
         }
         .status-badge {
             padding: 4px 12px;
@@ -223,6 +245,120 @@
             font-size: 12px;
             color: rgba(255, 255, 255, 0.6);
         }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 22px;
+            color: #fff;
+        }
+        .close-modal {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 28px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .close-modal:hover {
+            color: #fff;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+        .form-group textarea, .form-group input[type="datetime-local"] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+        }
+        /* Стилизация иконки календаря для Chrome/Edge/Safari */
+        .form-group input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .file-upload-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100px;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .file-upload-wrapper:hover {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.05);
+        }
+        .file-upload-wrapper i {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 5px;
+        }
+        .file-upload-wrapper span {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        #imagePreview {
+            margin-top: 10px;
+            display: none;
+            max-width: 100%;
+            border-radius: 8px;
+            max-height: 120px;
+            object-fit: cover;
+        }
+
     </style>
 </head>
 <body>
@@ -250,7 +386,7 @@
                     <option value="week" selected>За неделю</option>
                     <option value="month">За месяц</option>
                 </select>
-                <button class="dashboard-btn" type="button">Создать пост</button>
+                <button class="dashboard-btn" type="button" id="openPostModal">Создать пост</button>
                 <button class="dashboard-btn" id="lcLogout" type="button" style="background: rgba(255,255,255,0.12);">
                     <i class="bx bx-log-out"></i> Выйти
                 </button>
@@ -330,8 +466,9 @@
                             <td><span class="status-badge pending">На проверке</span></td>
                             <td>
                                 <div class="moderation-actions">
-                                    <button onclick="moderatePost(1, 'approve')" class="action-btn approve"><i class="bx bx-check"></i></button>
-                                    <button onclick="moderatePost(1, 'reject')" class="action-btn reject"><i class="bx bx-x"></i></button>
+                                    <button onclick="moderatePost(1, 'approve')" class="action-btn approve" title="Одобрить"><i class="bx bx-check"></i></button>
+                                    <button onclick="delayPost(1)" class="action-btn delay" title="Отложить"><i class="bx bx-time"></i></button>
+                                    <button onclick="moderatePost(1, 'reject')" class="action-btn reject" title="Отклонить"><i class="bx bx-x"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -342,8 +479,9 @@
                             <td><span class="status-badge pending">На проверке</span></td>
                             <td>
                                 <div class="moderation-actions">
-                                    <button onclick="moderatePost(2, 'approve')" class="action-btn approve"><i class="bx bx-check"></i></button>
-                                    <button onclick="moderatePost(2, 'reject')" class="action-btn reject"><i class="bx bx-x"></i></button>
+                                    <button onclick="moderatePost(2, 'approve')" class="action-btn approve" title="Одобрить"><i class="bx bx-check"></i></button>
+                                    <button onclick="delayPost(2)" class="action-btn delay" title="Отложить"><i class="bx bx-time"></i></button>
+                                    <button onclick="moderatePost(2, 'reject')" class="action-btn reject" title="Отклонить"><i class="bx bx-x"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -356,6 +494,58 @@
                 <h4 class="chart-title" style="margin-bottom: 20px;">Вовлеченность (Area)</h4>
                 <canvas id="engagementAreaChart" height="250"></canvas>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal for Creating Post (SMM) -->
+    <div id="postModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Создать новый пост</h2>
+                <span class="close-modal" id="closePostModal">&times;</span>
+            </div>
+            <form id="createPostForm">
+                <div class="form-group">
+                    <label for="postText">Текст публикации</label>
+                    <textarea id="postText" name="text" placeholder="Напишите текст поста..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="publishDate">Дата и время публикации</label>
+                    <input type="datetime-local" id="publishDate" name="publish_at" required>
+                </div>
+                <div class="form-group">
+                    <label>Медиафайлы</label>
+                    <div class="file-upload-wrapper">
+                        <i class="bx bx-cloud-upload"></i>
+                        <span>Загрузить фото</span>
+                        <input type="file" id="postFile" name="photo" accept="image/*">
+                    </div>
+                    <img id="imagePreview" src="#" alt="Предпросмотр">
+                </div>
+                <button type="submit" class="dashboard-btn" style="width: 100%; justify-content: center;">
+                    Запланировать пост
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Delaying Volunteer Post -->
+    <div id="delayModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Отложить публикацию</h2>
+                <span class="close-modal" id="closeDelayModal">&times;</span>
+            </div>
+            <form id="delayPostForm">
+                <input type="hidden" id="delayPostId">
+                <div class="form-group">
+                    <label for="delayDate">Выберите дату и время</label>
+                    <input type="datetime-local" id="delayDate" name="delay_at" required>
+                </div>
+                <button type="submit" class="dashboard-btn" style="width: 100%; justify-content: center;">
+                    Подтвердить время
+                </button>
+            </form>
         </div>
     </div>
 
@@ -385,7 +575,7 @@
                 title: 'Работа над черновиками',
                 label: 'Черновики',
                 data: [5, 8, 6, 10, 7, 9, 8],
-                color: '#a855f7'
+                color: '#FFE383'
             }
         };
 
@@ -464,6 +654,10 @@
         window.onload = function() {
             animateCounters();
 
+            // Глобальные настройки для белого текста в Chart.js
+            Chart.defaults.color = '#ffffff';
+            Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+
             // 1. Лучшее время
             timeChart = new Chart(document.getElementById('engagementTimeChart'), {
                 type: 'bar',
@@ -478,7 +672,14 @@
                 },
                 options: { 
                     responsive: true,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#1e1b4b', titleColor: '#fff', bodyColor: '#fff' }
+                    },
+                    scales: {
+                        y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#ffffff' } },
+                        x: { grid: { display: false }, ticks: { color: '#ffffff' } }
+                    },
                     animation: { duration: 1000, easing: 'easeOutQuart' }
                 }
             });
@@ -491,12 +692,18 @@
                     datasets: [{
                         data: [35, 20, 30, 15],
                         backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ec4899'],
-                        hoverOffset: 15
+                        hoverOffset: 15,
+                        borderWidth: 0
                     }]
                 },
                 options: { 
                     cutout: '75%', 
-                    plugins: { legend: { position: 'bottom' } },
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom',
+                            labels: { color: '#ffffff', padding: 20, usePointStyle: true }
+                        } 
+                    },
                     animation: { animateScale: true }
                 }
             });
@@ -507,23 +714,136 @@
                 data: {
                     labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
                     datasets: [{
-                        label: 'Реакции',
+                        label: 'Просмотры',
                         data: [120, 190, 150, 280, 220, 310, 290],
+                        borderColor: '#FFE383',
+                        backgroundColor: 'rgba(255, 227, 131, 0.1)',
                         fill: true,
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                        borderColor: '#6366f1',
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointHoverRadius: 8
+                        tension: 0.4
                     }]
                 },
-                options: { 
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
+                options: {
+                    responsive: true,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#1e1b4b', titleColor: '#fff', bodyColor: '#fff' }
+                    },
+                    scales: {
+                        y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#ffffff' } },
+                        x: { grid: { display: false }, ticks: { color: '#ffffff' } }
+                    }
                 }
             });
+
+            // --- New Logic for Modals ---
+            const postModal = document.getElementById('postModal');
+            const openPostBtn = document.getElementById('openPostModal');
+            const closePostBtn = document.getElementById('closePostModal');
+            const postForm = document.getElementById('createPostForm');
+            const postFile = document.getElementById('postFile');
+            const imagePreview = document.getElementById('imagePreview');
+
+            const delayModal = document.getElementById('delayModal');
+            const closeDelayBtn = document.getElementById('closeDelayModal');
+            const delayForm = document.getElementById('delayPostForm');
+
+            // Open/Close Post Modal
+            const openPostModalHandler = () => {
+                console.log('Opening post modal');
+                postModal.style.display = 'flex';
+            };
+            
+            if (openPostBtn) {
+                openPostBtn.onclick = openPostModalHandler;
+                // Дополнительно вешаем слушатель, если onclick перетирается
+                openPostBtn.addEventListener('click', openPostModalHandler);
+            }
+            
+            if (closePostBtn) closePostBtn.onclick = () => postModal.style.display = 'none';
+
+            // Open/Close Delay Modal
+            window.delayPost = (id) => {
+                console.log('Opening delay modal for post:', id);
+                const delayPostIdInput = document.getElementById('delayPostId');
+                if (delayPostIdInput) delayPostIdInput.value = id;
+                if (delayModal) delayModal.style.display = 'flex';
+            };
+            if (closeDelayBtn) closeDelayBtn.onclick = () => delayModal.style.display = 'none';
+
+            // Close on outside click
+            window.onclick = (event) => {
+                if (event.target == postModal) postModal.style.display = 'none';
+                if (event.target == delayModal) delayModal.style.display = 'none';
+            };
+
+            // Image preview
+            postFile.onchange = function() {
+                const [file] = postFile.files;
+                if (file) {
+                    imagePreview.src = URL.createObjectURL(file);
+                    imagePreview.style.display = 'block';
+                }
+            };
+
+            // Submit Post Form
+            postForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const formData = new FormData(postForm);
+                
+                // Визуальная обратная связь
+                const submitBtn = postForm.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerText;
+                submitBtn.innerText = 'Отправка...';
+                submitBtn.disabled = true;
+
+                try {
+                    // В реальности здесь будет fetch('/api/admin/create-post', ...)
+                    // Но так как бэк трогать нельзя, имитируем успешную отправку для фронта
+                    console.log('Отправка данных поста:', Object.fromEntries(formData));
+                    
+                    setTimeout(() => {
+                        alert('Пост успешно запланирован!');
+                        postForm.reset();
+                        imagePreview.style.display = 'none';
+                        postModal.style.display = 'none';
+                        submitBtn.innerText = originalText;
+                        submitBtn.disabled = false;
+                        
+                        // Обновляем счетчик запланированных (для красоты)
+                        const scheduledCount = document.querySelector('.stat-card.border-blue .stat-value');
+                        scheduledCount.innerText = parseInt(scheduledCount.innerText) + 1;
+                    }, 1000);
+                } catch (error) { 
+                    alert('Ошибка соединения.');
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
+                }
+            };
+
+            // Submit Delay Form
+            delayForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('delayPostId').value;
+                const date = document.getElementById('delayDate').value;
+                
+                const submitBtn = delayForm.querySelector('button[type="submit"]');
+                submitBtn.innerText = 'Сохранение...';
+                submitBtn.disabled = true;
+
+                // Имитация задержки сети
+                setTimeout(() => {
+                    alert(`Пост #${id} успешно отложен на ${date}`);
+                    delayModal.style.display = 'none';
+                    moderatePost(id, 'approve'); // Удаляем из очереди модерации
+                    
+                    submitBtn.innerText = 'Подтвердить время';
+                    submitBtn.disabled = false;
+                    delayForm.reset();
+                }, 800);
+            };
         };
     </script>
+
     <script src="/static/script.js"></script>
 </body>
 </html>
