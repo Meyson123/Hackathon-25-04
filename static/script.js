@@ -120,6 +120,7 @@
                 // Валидация
                 clearAuthError('loginUsername');
                 clearAuthError('loginPassword');
+                clearAuthError('loginConsent');
 
                 if (!username) {
                     setAuthError('loginUsername', 'Введите имя пользователя');
@@ -129,9 +130,12 @@
                     setAuthError('loginPassword', 'Введите пароль');
                     ok = false;
                 }
+                if (!$('#loginConsent').checked) {
+                    setAuthError('loginConsent', 'Необходимо согласие на обработку данных');
+                    ok = false;
+                }
 
                 if (!ok) return;
-
                 // Отправка данных на сервер
                 var formData = new FormData();
                 formData.append('username', username);
