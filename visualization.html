@@ -78,13 +78,11 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Mermaid чаще рендерит SVG/foreignObject — делаем адаптивно */
         .mermaid svg {
             max-width: 100%;
             height: auto;
         }
 
-        /* Когда диаграмма шире карточки — скролл, но без “прыжков” */
         .mermaid > svg,
         .mermaid > pre {
             margin: 0 auto;
@@ -360,13 +358,14 @@ graph TB
             <!-- Киллер-фичи -->
             <div class="diagram-card full-width">
                 <h2>🚀 Киллер-фичи проекта</h2>
-                <p class="subtitle">10 инновационных функций в 3 фазах реализации для выделения на хакатоне</p>
+                <p class="subtitle">12 инновационных функций в 3 фазах реализации для выделения на хакатоне</p>
                 <div class="mermaid">
 graph LR
     subgraph Фаза_3_Будущее
         F8[🌐 Мультиязычность<br/>Автоперевод на<br/>3-5 языков]
         F9[📈 Предиктивная<br/>аналитика<br/>Прогноз успеха]
         F10[🔗 Календари<br/>Синхронизация с<br/>Google/iCal]
+        F_VKMiniApp[📱 VK Mini App<br/>Мини-приложение<br/>для волонтёров]
     end
     
     subgraph Фаза_2_Желательно
@@ -380,18 +379,21 @@ graph LR
         F2[🏆 Геймификация<br/>Баллы и<br/>награды]
         F3[💬 Чаты участников<br/>Общение по<br/>мероприятиям]
         F4[📊 Live-дашборд<br/>Статистика в<br/>реальном времени]
+        F_AutoHash[🏷️ Автохэштеги<br/>Генерация хештегов<br/>по контенту]
     end
     
     style F1 fill:#10B981,color:#fff
     style F2 fill:#10B981,color:#fff
     style F3 fill:#10B981,color:#fff
     style F4 fill:#10B981,color:#fff
+    style F_AutoHash fill:#10B981,color:#fff
     style F5 fill:#3B82F6,color:#fff
     style F6 fill:#3B82F6,color:#fff
     style F7 fill:#3B82F6,color:#fff
     style F8 fill:#8B5CF6,color:#fff
     style F9 fill:#8B5CF6,color:#fff
     style F10 fill:#8B5CF6,color:#fff
+    style F_VKMiniApp fill:#8B5CF6,color:#fff
                 </div>
             </div>
 
