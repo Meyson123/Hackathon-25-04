@@ -149,19 +149,25 @@ async def create_post(
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    status = "published"
-    scheduled_at = None
-    published_at = now
+    # Волонтеры создают посты на модерации, SMM и редакторы - сразу публикуют
+    if role == "volunteer":
+        status = "pending_review"
+        scheduled_at = None
+        published_at = None
+    else:
+        status = "published"
+        scheduled_at = None
+        published_at = now
 
-    if publish_at:
-        # ожидаем datetime-local: "YYYY-MM-DDTHH:MM"
-        try:
-            dt = datetime.fromisoformat(publish_at)
-            scheduled_at = dt.strftime("%Y-%m-%d %H:%M:%S")
-            status = "scheduled"
-            published_at = None
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid publish_at")
+        if publish_at:
+            # ожидаем datetime-local: "YYYY-MM-DDTHH:MM"
+            try:
+                dt = datetime.fromisoformat(publish_at)
+                scheduled_at = dt.strftime("%Y-%m-%d %H:%M:%S")
+                status = "scheduled"
+                published_at = None
+            except Exception:
+                raise HTTPException(status_code=400, detail="Invalid publish_at")
 
     conn = get_db_connection()
     try:
@@ -198,6 +204,218 @@ async def create_post(
                 """,
                 (post_id, file_url, photo.content_type, len(content)),
             )
+
+        vk_result = None
+        if (post_to_vk or "").lower() in ("1", "true", "on", "yes"):
+            if str(user["role"]) not in ("smm", "admin"):
+                raise HTTPException(status_code=403, detail="VK posting is only available for SMM role")
+            cfg = _vk_config()
+            if not cfg:
+                raise HTTPException(status_code=500, detail="VK is not configured (VK_ACCESS_TOKEN)")
+            if status != "published":
+                raise HTTPException(status_code=400, detail="VK posting is only supported for immediate publishing")
+
+            try:
+                owner_id = cfg["owner_id"]
+                if owner_id is None:
+                    owner_id = await _vk_get_current_user_id(token=cfg["token"], v=cfg["v"])
+
+                attachment = None
+                vk_warning = None
+                if local_image_abs_path:
+                    try:
+                        attachment = await _vk_upload_wall_photo(
+                            owner_id=owner_id,
+                            token=cfg["token"],
+                            v=cfg["v"],
+                            abs_path=local_image_abs_path,
+                        )
+                    except Exception as img_err:
+                        # With community (group) tokens, VK may forbid upload server methods (error 27).
+                        # In that case we still publish the text, but without the image.
+                        msg = str(img_err)
+                        if "VK error 27" in msg and owner_id < 0:
+                            vk_warning = "VK rejected image upload for group token (error 27). Posted text without image."
+                            attachment = None
+                        else:
+                            raise
+
+                vk_result = await _vk_wall_post(
+                    owner_id=owner_id,
+                    token=cfg["token"],
+                    v=cfg["v"],
+                    message=clean_text,
+                    attachment=attachment,
+                )
+                if vk_warning:
+                    vk_result = dict(vk_result or {})
+                    vk_result["warning"] = vk_warning
+
+                cur.execute(
+                    """
+                    INSERT INTO publications (post_id, social_account_id, external_post_id, status, published_at)
+                    VALUES (?, NULL, ?, 'published', ?)
+                    """,
+                    (post_id, str(vk_result.get("post_id")), now),
+                )
+            except Exception as e:
+                cur.execute(
+                    """
+                    INSERT INTO publications (post_id, social_account_id, external_post_id, status, error_message, published_at)
+                    VALUES (?, NULL, NULL, 'failed', ?, ?)
+                    """,
+                    (post_id, str(e), now),
+                )
+                raise HTTPException(status_code=502, detail=f"VK publish failed: {e}")
+
+        conn.commit()
+        return JSONResponse({"ok": True, "id": post_id, "status": status, "vk": vk_result})
+    finally:
+        conn.close()
+
+
+@router.get("/api/posts/pending")
+async def get_pending_posts(request: Request):
+    """Получить посты на модерации (только для SMM)"""
+    moderator_id = _require_editor_or_smm(request)
+
+    conn = get_db_connection()
+    try:
+        posts = conn.execute("""
+            SELECT
+                p.id,
+                p.title,
+                p.content,
+                p.status,
+                p.created_at,
+                u.username as author_name,
+                u.role as author_role,
+                mf.file_url,
+                mf.file_type
+            FROM posts p
+            LEFT JOIN users u ON p.author_id = u.id
+            LEFT JOIN media_files mf ON p.id = mf.post_id
+            WHERE p.status = 'pending_review'
+            ORDER BY p.created_at DESC
+        """).fetchall()
+
+        result = []
+        for post in posts:
+            post_dict = dict(post)
+            # Группируем медиафайлы для поста
+            if post_dict["file_url"]:
+                post_dict["media"] = [{
+                    "url": post_dict["file_url"],
+                    "type": post_dict["file_type"]
+                }]
+            else:
+                post_dict["media"] = []
+            del post_dict["file_url"]
+            del post_dict["file_type"]
+            result.append(post_dict)
+
+        return JSONResponse({"posts": result})
+    finally:
+        conn.close()
+
+
+@router.post("/api/posts/{post_id}/moderate")
+async def moderate_post(request: Request, post_id: int, action: str = Form(...)):
+    """Модерация поста: approve (одобрить) или reject (отклонить)"""
+    moderator_id = _require_editor_or_smm(request)
+
+    if action not in ("approve", "reject"):
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    conn = get_db_connection()
+    try:
+        # Проверяем, что пост существует и на модерации
+        post = conn.execute(
+            "SELECT id, status, author_id FROM posts WHERE id = ?",
+            (post_id,)
+        ).fetchone()
+
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+
+        if post["status"] != "pending_review":
+            raise HTTPException(status_code=400, detail="Post is not pending review")
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        if action == "approve":
+            # Одобряем пост - публикуем его
+            conn.execute(
+                """
+                UPDATE posts
+                SET status = 'published', moderator_id = ?, published_at = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (moderator_id, now, now, post_id)
+            )
+
+            # Начисляем баллы волонтеру
+            conn.execute(
+                """
+                UPDATE users
+                SET points = points + 10
+                WHERE id = ?
+                """,
+                (post["author_id"],)
+            )
+        else:
+            # Отклоняем пост
+            conn.execute(
+                """
+                UPDATE posts
+                SET status = 'draft', moderator_id = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (moderator_id, now, post_id)
+            )
+
+        conn.commit()
+        return JSONResponse({"ok": True, "action": action})
+    finally:
+        conn.close()
+
+
+@router.post("/api/posts/{post_id}/schedule")
+async def schedule_post(request: Request, post_id: int, delay_at: str = Form(...)):
+    """Отложенная публикация поста"""
+    moderator_id = _require_editor_or_smm(request)
+
+    try:
+        dt = datetime.fromisoformat(delay_at)
+        scheduled_at = dt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid datetime format")
+
+    conn = get_db_connection()
+    try:
+        # Проверяем, что пост существует и на модерации
+        post = conn.execute(
+            "SELECT id, status, author_id FROM posts WHERE id = ?",
+            (post_id,)
+        ).fetchone()
+
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+
+        if post["status"] != "pending_review":
+            raise HTTPException(status_code=400, detail="Post is not pending review")
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Планируем публикацию
+        conn.execute(
+            """
+            UPDATE posts
+            SET status = 'scheduled', moderator_id = ?, scheduled_at = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (moderator_id, scheduled_at, now, post_id)
+        )
 
         vk_result = None
         if (post_to_vk or "").lower() in ("1", "true", "on", "yes"):
