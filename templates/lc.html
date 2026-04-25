@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет — Медиахаб</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="gradient-bg"></div>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="/home" class="navbar-logo">М</a>
+            <div class="navbar-links">
+                <a href="/home">Главная</a>
+                <a href="#" onclick="alert('События — в разработке')">События</a>
+            </div>
+        </div>
+        <div class="navbar-right">
+            <a class="navbar-user" id="navUserBtn">
+                <i class="bx bxs-user"></i>
+                <span id="navUserName">Пользователь</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- ===== LC LAYOUT ===== -->
+    <div class="lc-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="lc-sidebar">
+            <div class="lc-sidebar-header">
+                <div class="lc-sidebar-avatar" id="lcAvatar">U</div>
+                <div class="lc-sidebar-name" id="lcName">Пользователь</div>
+                <div class="lc-sidebar-role" id="lcRole">—</div>
+            </div>
+
+            <nav class="lc-nav" id="lcNav">
+                <!-- === Общие для всех === -->
+                <div class="lc-nav-section-title">Общее</div>
+                <a class="lc-nav-item active" data-panel="profile">
+                    <i class="bx bx-user"></i> Профиль
+                </a>
+
+                <!-- === Админ === -->
+                <div class="lc-nav-divider role-admin" style="display:none;"></div>
+                <div class="lc-nav-section-title role-admin" style="display:none;">Администрирование</div>
+                <a class="lc-nav-item role-admin" data-panel="admin-events" style="display:none;">
+                    <i class="bx bx-calendar-event"></i> События, календарь
+                </a>
+                <a class="lc-nav-item role-admin" data-panel="admin-roles" style="display:none;">
+                    <i class="bx bx-user-check"></i> Назначить роль
+                </a>
+                <a class="lc-nav-item role-admin" data-panel="admin-stats" style="display:none;">
+                    <i class="bx bx-bar-chart-alt-2"></i> Статистика
+                </a>
+
+                <!-- === СММ === -->
+                <div class="lc-nav-divider role-smm" style="display:none;"></div>
+                <div class="lc-nav-section-title role-smm" style="display:none;">Контент</div>
+                <a class="lc-nav-item role-smm" data-panel="smm-events" style="display:none;">
+                    <i class="bx bx-calendar"></i> События
+                </a>
+                <a class="lc-nav-item role-smm" data-panel="smm-posts" style="display:none;">
+                    <i class="bx bx-news"></i> Посты / Анонсы
+                </a>
+                <a class="lc-nav-item role-smm" data-panel="smm-stats" style="display:none;">
+                    <i class="bx bx-line-chart"></i> Статистика по постам
+                </a>
+
+                <!-- === Выход === -->
+                <div class="lc-nav-divider"></div>
+                <a class="lc-nav-item" id="lcLogout">
+                    <i class="bx bx-log-out"></i> Выйти
+                </a>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="lc-main">
+
+            <!-- ===== ПРОФИЛЬ ===== -->
+            <div class="lc-panel active" id="panel-profile">
+                <h2 class="lc-page-title">Профиль</h2>
+                <p class="lc-page-subtitle">Информация о вашем аккаунте</p>
+                <div class="lc-stats-grid">
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Имя</div>
+                        <div class="stat-value" id="profileName" style="font-size:1.1em;">—</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Роль</div>
+                        <div class="stat-value" id="profileRole" style="font-size:1.1em;">—</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Статус</div>
+                        <div class="stat-value" id="profileStatus" style="font-size:1.1em;">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== АДМИН: СОБЫТИЯ / КАЛЕНДАРЬ ===== -->
+            <div class="lc-panel" id="panel-admin-events">
+                <h2 class="lc-page-title"><i class="bx bx-calendar-event"></i> События и календарь</h2>
+                <p class="lc-page-subtitle">Управление мероприятиями — в разработке</p>
+                <div class="lc-stat-card" style="text-align:center; padding:40px;">
+                    <i class="bx bx-wrench" style="font-size:48px; color:#6c5ce7;"></i>
+                    <p style="margin-top:12px; color:#6868a0;">Функционал в разработке</p>
+                </div>
+            </div>
+
+            <!-- ===== АДМИН: НАЗНАЧИТЬ РОЛЬ ===== -->
+            <div class="lc-panel" id="panel-admin-roles">
+                <h2 class="lc-page-title"><i class="bx bx-user-check"></i> Назначить роль</h2>
+                <p class="lc-page-subtitle">Подтверждение регистраций и управление ролями</p>
+                <div class="role-assign-list" id="roleAssignList">
+                    <!-- Пример элемента (будет заполняться из JS/бэка) -->
+                    <div class="role-assign-item">
+                        <div class="user-info">
+                            <div class="user-avatar"><i class="bx bx-user"></i></div>
+                            <div>
+                                <div class="user-name">Иван Петров</div>
+                                <div class="user-email">ivan@example.com</div>
+                            </div>
+                        </div>
+                        <select>
+                            <option value="" disabled selected>Роль…</option>
+                            <option value="smm">СММ</option>
+                            <option value="volunteer">Волонтёр</option>
+                        </select>
+                    </div>
+                    <div class="role-assign-item">
+                        <div class="user-info">
+                            <div class="user-avatar"><i class="bx bx-user"></i></div>
+                            <div>
+                                <div class="user-name">Мария Сидорова</div>
+                                <div class="user-email">maria@example.com</div>
+                            </div>
+                        </div>
+                        <select>
+                            <option value="" disabled selected>Роль…</option>
+                            <option value="smm">СММ</option>
+                            <option value="volunteer">Волонтёр</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== АДМИН: СТАТИСТИКА ===== -->
+            <div class="lc-panel" id="panel-admin-stats">
+                <h2 class="lc-page-title"><i class="bx bx-bar-chart-alt-2"></i> Расширенная статистика</h2>
+                <p class="lc-page-subtitle">Аналитика по всей платформе</p>
+                <div class="lc-stats-grid">
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Всего пользователей</div>
+                        <div class="stat-value">128</div>
+                        <div class="stat-change up">+12 за месяц</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Публикаций</div>
+                        <div class="stat-value">64</div>
+                        <div class="stat-change up">+8 за неделю</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Мероприятий</div>
+                        <div class="stat-value">15</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Охват</div>
+                        <div class="stat-value">3.2K</div>
+                        <div class="stat-change up">+18%</div>
+                    </div>
+                </div>
+                <div class="lc-table-wrapper">
+                    <table class="lc-table">
+                        <thead>
+                            <tr>
+                                <th>Пользователь</th>
+                                <th>Роль</th>
+                                <th>Публикаций</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Алексей К.</td>
+                                <td>СММ</td>
+                                <td>23</td>
+                                <td><span class="status-badge published">Активен</span></td>
+                            </tr>
+                            <tr>
+                                <td>Ольга М.</td>
+                                <td>Волонтёр</td>
+                                <td>5</td>
+                                <td><span class="status-badge published">Активен</span></td>
+                            </tr>
+                            <tr>
+                                <td>Дмитрий В.</td>
+                                <td>СММ</td>
+                                <td>0</td>
+                                <td><span class="status-badge pending">Ожидает</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== СММ: СОБЫТИЯ ===== -->
+            <div class="lc-panel" id="panel-smm-events">
+                <h2 class="lc-page-title"><i class="bx bx-calendar"></i> События</h2>
+                <p class="lc-page-subtitle">Мероприятия, к которым вы привязаны</p>
+                <div class="lc-table-wrapper">
+                    <table class="lc-table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Дата</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>День молодёжи</td>
+                                <td>27 июня 2025</td>
+                                <td><span class="status-badge scheduled">Запланировано</span></td>
+                            </tr>
+                            <tr>
+                                <td>Хакатон «Код будущего»</td>
+                                <td>15 мая 2025</td>
+                                <td><span class="status-badge published">Опубликовано</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== СММ: ПОСТЫ / АНОНСЫ ===== -->
+            <div class="lc-panel" id="panel-smm-posts">
+                <h2 class="lc-page-title"><i class="bx bx-news"></i> Посты и анонсы</h2>
+                <p class="lc-page-subtitle">Управление публикациями</p>
+                <div class="lc-table-wrapper">
+                    <table class="lc-table">
+                        <thead>
+                            <tr>
+                                <th>Заголовок</th>
+                                <th>Тип</th>
+                                <th>Дата</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Открытие нового сезона</td>
+                                <td>Анонс</td>
+                                <td>10 мая 2025</td>
+                                <td><span class="status-badge published">Опубликован</span></td>
+                            </tr>
+                            <tr>
+                                <td>Итоги хакатона</td>
+                                <td>Пост</td>
+                                <td>16 мая 2025</td>
+                                <td><span class="status-badge draft">Черновик</span></td>
+                            </tr>
+                            <tr>
+                                <td>Набор волонтёров</td>
+                                <td>Анонс</td>
+                                <td>20 мая 2025</td>
+                                <td><span class="status-badge pending">На модерации</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== СММ: СТАТИСТИКА ПО ПОСТАМ ===== -->
+            <div class="lc-panel" id="panel-smm-stats">
+                <h2 class="lc-page-title"><i class="bx bx-line-chart"></i> Статистика по постам</h2>
+                <p class="lc-page-subtitle">Аналитика ваших публикаций</p>
+                <div class="lc-stats-grid">
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Всего постов</div>
+                        <div class="stat-value">12</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Опубликовано</div>
+                        <div class="stat-value">8</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Просмотры</div>
+                        <div class="stat-value">1.4K</div>
+                        <div class="stat-change up">+24%</div>
+                    </div>
+                    <div class="lc-stat-card">
+                        <div class="stat-label">Лайки</div>
+                        <div class="stat-value">89</div>
+                        <div class="stat-change up">+11</div>
+                    </div>
+                </div>
+                <div class="lc-table-wrapper">
+                    <table class="lc-table">
+                        <thead>
+                            <tr>
+                                <th>Пост</th>
+                                <th>Просмотры</th>
+                                <th>Лайки</th>
+                                <th>Комментарии</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Открытие нового сезона</td>
+                                <td>520</td>
+                                <td>34</td>
+                                <td>7</td>
+                            </tr>
+                            <tr>
+                                <td>Итоги хакатона</td>
+                                <td>380</td>
+                                <td>28</td>
+                                <td>12</td>
+                            </tr>
+                            <tr>
+                                <td>Набор волонтёров</td>
+                                <td>210</td>
+                                <td>15</td>
+                                <td>3</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

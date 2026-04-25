@@ -2,185 +2,78 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Авторизация · Анимированный градиент</title>
-    <!-- Подключение иконок Boxicons -->
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <!-- Подключение файла стилей -->
-    <link rel="stylesheet" href="login-page.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация — Медиахаб</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <!-- Анимированный градиентный фон -->
     <div class="gradient-bg"></div>
 
-    <!-- Карточка авторизации -->
-    <div class="wrapper">
-        <h1>Войти</h1>
+    <div class="auth-container">
 
-        <form id="loginForm" novalidate>
-            <!-- Поле: Логин -->
-            <div class="input-box" id="usernameBox">
-                <input type="text" id="username" placeholder="Имя пользователя" autocomplete="username" required>
-                <i class='bx bxs-user'></i>
+        <!-- ===== STEP 1: ROLE SELECTION ===== -->
+        <div class="auth-card" id="roleStep">
+            <div class="role-selection">
+                <h2>Добро пожаловать</h2>
+                <p>Выберите роль, в которой хотите зарегистрироваться. Регистрация потребует подтверждения администратором.</p>
+                <div class="role-cards">
+                    <div class="role-card" data-role="smm">
+                        <i class="bx bx-edit"></i>
+                        <h3>СММ</h3>
+                        <p>Управление контентом и публикациями</p>
+                    </div>
+                    <div class="role-card" data-role="volunteer">
+                        <i class="bx bx-heart"></i>
+                        <h3>Волонтёр</h3>
+                        <p>Участие в мероприятиях и помощь</p>
+                    </div>
+                </div>
+                <div class="auth-footer">
+                    <p>Уже есть аккаунт? <a href="#" id="goToLogin">Войти</a></p>
+                </div>
             </div>
-            <div class="error-message" id="usernameError"></div>
+        </div>
 
-            <!-- Поле: Пароль -->
-            <div class="input-box" id="passwordBox">
-                <input type="password" id="password" placeholder="Пароль" autocomplete="current-password" required>
-                <i class='bx bxs-lock-alt'></i>
+        <!-- ===== STEP 2: LOGIN FORM ===== -->
+        <div class="auth-card" id="loginStep" style="display:none;">
+            <h1>Войти</h1>
+            <p class="auth-subtitle">Введите данные для входа в систему</p>
+
+            <form id="loginForm" novalidate>
+                <div class="auth-input-group" id="loginUsernameGroup">
+                    <input type="text" id="loginUsername" placeholder="Имя пользователя" autocomplete="username" required>
+                    <i class="bx bxs-user"></i>
+                </div>
+                <div class="auth-error" id="loginUsernameError"></div>
+
+                <div class="auth-input-group" id="loginPasswordGroup">
+                    <input type="password" id="loginPassword" placeholder="Пароль" autocomplete="current-password" required>
+                    <i class="bx bxs-lock-alt"></i>
+                </div>
+                <div class="auth-error" id="loginPasswordError"></div>
+
+                <div class="auth-row">
+                    <label>
+                        <input type="checkbox" id="rememberMe">
+                        Запомнить меня
+                    </label>
+                    <a href="#" id="forgotLink">Забыли пароль?</a>
+                </div>
+
+                <button type="submit" class="auth-btn" id="loginBtn">Авторизоваться</button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Нет аккаунта? <a href="/auth" id="goToRole">Зарегистрироваться</a></p>
             </div>
-            <div class="error-message" id="passwordError"></div>
+        </div>
 
-            <!-- Чекбокс и ссылка -->
-            <div class="remember">
-                <label>
-                    <input type="checkbox" id="rememberMe">
-                    Запомнить меня
-                </label>
-                <a href="#" id="forgotLink">Забыли пароль?</a>
-            </div>
-
-            <!-- Кнопка -->
-            <button type="submit" class="btn">Авторизоваться</button>
-
-            <!-- Регистрация -->
-            <div class="register-link">
-                <p>Нет аккаунта? <a href="#" id="registerLink">Зарегистрироваться</a></p>
-            </div>
-        </form>
     </div>
 
-    <script>
-        (function() {
-            'use strict';
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
 
-            const form = document.getElementById('loginForm');
-            const usernameInput = document.getElementById('username');
-            const passwordInput = document.getElementById('password');
-            const usernameBox = document.getElementById('usernameBox');
-            const passwordBox = document.getElementById('passwordBox');
-            const usernameError = document.getElementById('usernameError');
-            const passwordError = document.getElementById('passwordError');
-            const forgotLink = document.getElementById('forgotLink');
-            const registerLink = document.getElementById('registerLink');
-
-            // Скрыть все ошибки
-            function hideErrors() {
-                usernameError.style.display = 'none';
-                passwordError.style.display = 'none';
-                usernameBox.classList.remove('error');
-                passwordBox.classList.remove('error');
-            }
-
-            // Показать ошибку поля
-            function showFieldError(inputElement, boxElement, errorElement, message) {
-                if (boxElement) boxElement.classList.add('error');
-                if (errorElement) {
-                    errorElement.textContent = message || 'Обязательное поле';
-                    errorElement.style.display = 'block';
-                }
-            }
-
-            // Валидация и отправка
-            function handleSubmit(event) {
-                event.preventDefault();
-                hideErrors();
-
-                let isValid = true;
-                const usernameValue = usernameInput.value.trim();
-                const passwordValue = passwordInput.value.trim();
-
-                if (usernameValue === '') {
-                    showFieldError(usernameInput, usernameBox, usernameError, 'Введите имя пользователя');
-                    isValid = false;
-                } else if (usernameValue.length < 2) {
-                    showFieldError(usernameInput, usernameBox, usernameError, 'Минимум 2 символа');
-                    isValid = false;
-                }
-
-                if (passwordValue === '') {
-                    showFieldError(passwordInput, passwordBox, passwordError, 'Введите пароль');
-                    isValid = false;
-                } else if (passwordValue.length < 4) {
-                    showFieldError(passwordInput, passwordBox, passwordError, 'Минимум 4 символа');
-                    isValid = false;
-                }
-
-                if (isValid) {
-                    const rememberChecked = document.getElementById('rememberMe').checked;
-
-                    console.log('✅ Авторизация успешна:', {
-                        username: usernameValue,
-                        password: passwordValue,
-                        remember: rememberChecked
-                    });
-
-                    const btn = form.querySelector('.btn');
-                    const originalText = btn.textContent;
-                    btn.textContent = 'Успешно ✓';
-                    btn.style.background = '#e0f2e0';
-                    btn.style.color = '#1e3b1e';
-
-                    const wrapper = document.querySelector('.wrapper');
-                    wrapper.style.border = '2px solid rgba(255, 255, 255, 0.7)';
-
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.style.background = '#fff';
-                        btn.style.color = '#243224';
-                        wrapper.style.border = '2px solid rgba(255, 255, 255, 0.15)';
-                        alert('Демо-авторизация: данные корректны.');
-                    }, 1200);
-                }
-            }
-
-            // Обработчики ссылок
-            function handleForgotPassword(e) {
-                e.preventDefault();
-                alert('🔐 Восстановление пароля (демо).');
-            }
-
-            function handleRegisterClick(e) {
-                e.preventDefault();
-                alert('📝 Страница регистрации (демо).');
-            }
-
-            // Скрытие ошибок при вводе
-            usernameInput.addEventListener('input', function() {
-                if (usernameBox.classList.contains('error')) {
-                    usernameBox.classList.remove('error');
-                    usernameError.style.display = 'none';
-                }
-            });
-
-            passwordInput.addEventListener('input', function() {
-                if (passwordBox.classList.contains('error')) {
-                    passwordBox.classList.remove('error');
-                    passwordError.style.display = 'none';
-                }
-            });
-
-            // Скрытие ошибок при фокусе
-            usernameInput.addEventListener('focus', function() {
-                if (usernameBox.classList.contains('error')) {
-                    usernameBox.classList.remove('error');
-                    usernameError.style.display = 'none';
-                }
-            });
-
-            passwordInput.addEventListener('focus', function() {
-                if (passwordBox.classList.contains('error')) {
-                    passwordBox.classList.remove('error');
-                    passwordError.style.display = 'none';
-                }
-            });
-
-            // Навешивание событий
-            form.addEventListener('submit', handleSubmit);
-            if (forgotLink) forgotLink.addEventListener('click', handleForgotPassword);
-            if (registerLink) registerLink.addEventListener('click', handleRegisterClick);
-        })();
-    </script>
+    <script src="/static/script.js"></script>
 </body>
 </html>
