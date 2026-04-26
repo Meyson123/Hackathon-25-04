@@ -623,6 +623,9 @@
     let lastSelectedDateStr = '';         // для панели
     let lastSelectedCircleVal = '';       // последнее значение круга выбранной даты
     
+    // Кэш событий за текущий месяц
+    let monthEventsCache = {};  // { "YYYY-MM-DD": [events] }
+    
     const monthYearDisplay = document.getElementById('monthYearDisplay');
     const calendarContainer = document.getElementById('calendarDatesContainer');
     const eventsListContainer = document.getElementById('eventsListContainer');
@@ -630,24 +633,95 @@
     const nextBtn = document.getElementById('nextMonthBtn');
     
     // ------------------ вспомогательные функции ------------------
+    
+    // Загрузка всех событий за месяц (для кэширования)
+    async function fetchEventsForMonth(year, month) {
+        try {
+            const response = await fetch(`/api/events/month/${year}/${month + 1}`);
+            
+            if (!response.ok) {
+                console.error("Ошибка при загрузке событий за месяц:", response.statusText);
+                return {};
+            }
+            
+            const events = await response.json();
+            
+            // Группируем события по датам
+            const groupedEvents = {};
+            events.forEach(event => {
+                // Парсим дату из разных форматов
+                let dateStr = event.start_datetime;
+                
+                // Убираем время и часовой пояс
+                if (dateStr.includes('T')) {
+                    dateStr = dateStr.split('T')[0];
+                } else if (dateStr.includes(' ')) {
+                    dateStr = dateStr.split(' ')[0];
+                }
+                
+                if (!groupedEvents[dateStr]) {
+                    groupedEvents[dateStr] = [];
+                }
+                groupedEvents[dateStr].push({
+                    id: event.id,
+                    name: event.title,
+                    time: event.all_day ? 'Весь день' : formatTime(event.start_datetime),
+                    description: event.description,
+                    location: event.location,
+                    start_datetime: event.start_datetime,
+                    end_datetime: event.end_datetime
+                });
+            });
+            
+            return groupedEvents;
+        } catch (e) {
+            console.error("Ошибка при загрузке событий за месяц:", e);
+            return {};
+        }
+    }
+    
     async function fetchEventsForDate(year, month, day) {
         try {
-            // Имитация запроса к БД
-            // const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            // const response = await fetch(`/api/events?date=${dateStr}`);
-            // return await response.json();
-
-            // Заглушка для демонстрации
-            if (day % 3 === 0) {
-                return [
-                    { name: "Хакатон 2025", time: "10:00" },
-                    { name: "Лекция по AI", time: "14:30" }
-                ];
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            // Сначала проверяем кэш
+            if (monthEventsCache[dateStr]) {
+                return monthEventsCache[dateStr];
             }
-            return [];
+            
+            // Если нет в кэше, загружаем напрямую
+            const response = await fetch(`/api/events/date/${dateStr}`);
+            
+            if (!response.ok) {
+                console.error("Ошибка при загрузке событий:", response.statusText);
+                return [];
+            }
+            
+            const events = await response.json();
+            
+            // Преобразуем данные в формат, ожидаемый функцией renderEvents
+            return events.map(event => ({
+                id: event.id,
+                name: event.title,
+                time: event.all_day ? 'Весь день' : formatTime(event.start_datetime),
+                description: event.description,
+                location: event.location,
+                start_datetime: event.start_datetime,
+                end_datetime: event.end_datetime
+            }));
         } catch (e) {
             console.error("Ошибка при загрузке событий:", e);
             return [];
+        }
+    }
+    
+    // Форматирование времени из ISO строки
+    function formatTime(isoString) {
+        try {
+            const date = new Date(isoString);
+            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            return '';
         }
     }
 
@@ -661,8 +735,12 @@
 
         eventsListContainer.innerHTML = events.map(event => `
             <div class="event-item">
-                <div class="event-name">${event.name}</div>
-                <div class="event-time">${event.time}</div>
+                <div class="event-header">
+                    <div class="event-name">${event.name}</div>
+                    <div class="event-time">${event.time}</div>
+                </div>
+                ${event.description ? `<div class="event-description">${event.description}</div>` : ''}
+                ${event.location ? `<div class="event-location"><i class='bx bx-map'></i> ${event.location}</div>` : ''}
             </div>
         `).join('');
     }
@@ -685,13 +763,8 @@
             // Форматируем дату для запроса (YYYY-MM-DD)
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             
-            // Пример запроса к вашему API
-            // const response = await fetch(`/api/events/count?date=${dateStr}`);
-            // const data = await response.json();
-            // return data.count > 0;
-
-            // Имитация ответа сервера для демонстрации:
-            return (day % 3 === 0); // Круг будет у каждого третьего числа
+            // Проверяем кэш
+            return monthEventsCache[dateStr] && monthEventsCache[dateStr].length > 0;
         } catch (e) {
             console.error("Ошибка при проверке событий:", e);
             return false;
@@ -750,6 +823,9 @@
     const month = currentMonth;
     monthYearDisplay.textContent = `${getMonthName(month)} ${year}`;
     
+    // Загружаем события за месяц в кэш
+    monthEventsCache = await fetchEventsForMonth(year, month);
+    
     const firstDayOfMonth = new Date(year, month, 1);
     let offset = (firstDayOfMonth.getDay() === 0) ? 6 : firstDayOfMonth.getDay() - 1;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -776,21 +852,22 @@
 
         if (isTodayDate(year, month, d)) cellDiv.classList.add('today');
 
-        // Проверяем наличие событий в БД
-        const showCircle = await hasEvents(d, month, year);
-        if (showCircle) {
+        // Проверяем наличие событий в кэше
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const events = monthEventsCache[dateStr] || [];
+        
+        if (events.length > 0) {
             const circle = document.createElement('div');
             circle.className = 'day-circle';
-            
-            // Получаем количество событий для отображения в круге
-            const events = await fetchEventsForDate(year, month, d);
             circle.textContent = events.length;
             
             cellDiv.appendChild(circle);
             cellDiv.setAttribute('data-circle', events.length); 
         } else {
             cellDiv.setAttribute('data-circle', '0');
-        }        const cornerNumber = document.createElement('div');
+        }
+        
+        const cornerNumber = document.createElement('div');
         cornerNumber.className = 'day-corner-number';
         cornerNumber.textContent = d;
         

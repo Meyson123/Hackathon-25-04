@@ -754,6 +754,10 @@ async def publish_scheduled_posts():
             published_count += 1
 
         conn.commit()
-        return JSONResponse({"ok": True, "id": post_id, "status": status, "vk": vk_result})
+        return JSONResponse({
+            "ok": True,
+            "published_count": published_count,
+            "message": f"Опубликовано {published_count} постов"
+        })
     finally:
         conn.close()

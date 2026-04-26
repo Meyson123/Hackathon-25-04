@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 import sqlite3
 import os
+from datetime import datetime
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -17,6 +18,7 @@ def get_db_connection():
 async def home(request: Request):
     conn = get_db_connection()
     try:
+        # Получаем новости
         rows = conn.execute(
             """
             SELECT
@@ -56,7 +58,26 @@ async def home(request: Request):
             news_posts.append(post_dict)
     except Exception:
         news_posts = []
+    
+    # Получаем предстоящие мероприятия
+    upcoming_events = []
+    try:
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        event_rows = conn.execute("""
+            SELECT * FROM events 
+            WHERE start_datetime >= ?
+            ORDER BY start_datetime ASC
+            LIMIT 5
+        """, (current_time,)).fetchall()
+        
+        upcoming_events = [dict(row) for row in event_rows]
+    except Exception:
+        upcoming_events = []
     finally:
         conn.close()
 
-    return templates.TemplateResponse("home.html", {"request": request, "news_posts": news_posts})
+    return templates.TemplateResponse("home.html", {
+        "request": request, 
+        "news_posts": news_posts,
+        "upcoming_events": upcoming_events
+    })
