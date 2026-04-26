@@ -35,7 +35,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/files", StaticFiles(directory="files"), name="files")
 
 # Подключение роутеров
-from routes import home, reg, auth, lc, posts, reports
+from routes import home, reg, auth, lc, posts, reports, events
 
 app.include_router(home.router, tags=["home"])
 app.include_router(reg.router, tags=["registration"])
@@ -43,11 +43,21 @@ app.include_router(auth.router, tags=["authentication"])
 app.include_router(lc.router, tags=["personal_cabinet"])
 app.include_router(posts.router, tags=["posts"])
 app.include_router(reports.router, tags=["reports"])
+app.include_router(events.router, tags=["events"])
 
 # Визуализация
 @app.get("/viz")
 async def visualization(request: Request):
     return templates.TemplateResponse("visualization.html", {"request": request})
+
+# Инициализация календаря при запуске
+@app.on_event("startup")
+async def startup_event():
+    """Инициализация при запуске сервера"""
+    from google_calendar import init_calendar
+    
+    db_path = os.path.join(_ROOT_DIR, "db", "mediahub.db")
+    init_calendar(db_path)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

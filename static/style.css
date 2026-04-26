@@ -1204,8 +1204,8 @@ body {
             -webkit-backdrop-filter: blur(20px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            flex-direction: column;
+            gap: 10px;
             transition: 0.3s;
         }
 
@@ -1214,10 +1214,18 @@ body {
             transform: translateY(-2px);
         }
 
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
         .event-name {
             font-size: 1.2rem;
             font-weight: 700;
             color: #fff;
+            flex: 1;
         }
 
         .event-time {
@@ -1227,6 +1235,25 @@ body {
             background: rgba(255, 255, 255, 0.1);
             padding: 4px 12px;
             border-radius: 40px;
+            white-space: nowrap;
+        }
+
+        .event-description {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.4;
+        }
+
+        .event-location {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .event-location i {
+            font-size: 1rem;
         }
 
         .no-events {
@@ -1693,4 +1720,3 @@ body {
     opacity: 0;
     pointer-events: none;
 }
-
