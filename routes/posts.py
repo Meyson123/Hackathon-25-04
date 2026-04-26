@@ -148,11 +148,12 @@ def _find_similar_posts(text: str, threshold: float = 0.7) -> list:
     """Находит похожие посты по содержимому"""
     conn = get_db_connection()
     try:
-        # Получаем все опубликованные посты
+        # Получаем последние посты (не только опубликованные),
+        # иначе проверка "уникальности" почти всегда пустая для редактора.
         posts = conn.execute("""
             SELECT id, title, content, created_at
             FROM posts
-            WHERE status IN ('published', 'scheduled')
+            WHERE status IN ('published', 'scheduled', 'pending_review', 'draft')
             ORDER BY created_at DESC
             LIMIT 50
         """).fetchall()
@@ -184,6 +185,25 @@ def _find_similar_posts(text: str, threshold: float = 0.7) -> list:
         conn.close()
 
 
+@router.get("/api/tags")
+async def list_tags(request: Request):
+    """Список тегов для UI"""
+    _require_authenticated(request)
+
+    conn = get_db_connection()
+    try:
+        # База могла быть инициализирована без таблиц тегов; в этом случае возвращаем пустой список.
+        try:
+            rows = conn.execute(
+                "SELECT name FROM tags ORDER BY name LIMIT 200"
+            ).fetchall()
+            return JSONResponse({"tags": [{"name": r["name"]} for r in rows]})
+        except Exception:
+            return JSONResponse({"tags": []})
+    finally:
+        conn.close()
+
+
 @router.get("/api/posts/check-similar")
 async def check_similar_posts(request: Request, text: str):
     """Проверяет наличие похожих постов"""
@@ -201,9 +221,13 @@ async def check_similar_posts(request: Request, text: str):
 async def create_post(    request: Request,
     text: str = Form(...),
     publish_at: str | None = Form(None),
+    tags: str | None = Form(None),
+    post_to_vk: str | None = Form(None),
     photo: UploadFile | None = File(None),
 ):
-    user = _require_editor_or_smm(request)
+    # Пост могут создавать все активные пользователи.
+    # Волонтёры отправляют на модерацию, редакторы/SMM/админ публикуют или планируют.
+    user = _require_authenticated(request)
     author_id = int(user["id"])
     role = str(user["role"])
 
@@ -299,7 +323,10 @@ async def create_post(    request: Request,
                 raise HTTPException(status_code=403, detail="VK posting is only available for SMM role")
             cfg = _vk_config()
             if not cfg:
-                raise HTTPException(status_code=500, detail="VK is not configured (VK_ACCESS_TOKEN)")
+                raise HTTPException(
+                    status_code=400,
+                    detail="VK is not configured: set VK_ACCESS_TOKEN and VK_OWNER_ID in .env",
+                )
             if status != "published":
                 raise HTTPException(status_code=400, detail="VK posting is only supported for immediate publishing")
 
@@ -360,6 +387,11 @@ async def create_post(    request: Request,
         return JSONResponse({"ok": True, "id": post_id, "status": status, "vk": vk_result})
     finally:
         conn.close()
+
+
+def _require_authenticated_user_id_and_role(request: Request) -> tuple[int, str]:
+    user = _require_authenticated(request)
+    return int(user["id"]), str(user["role"])
 
 
 class AiEditPostRequest(BaseModel):
@@ -433,7 +465,7 @@ async def ai_edit_post(request: Request, payload: AiEditPostRequest):
 @router.get("/api/posts/pending")
 async def get_pending_posts(request: Request):
     """Получить посты на модерации (только для SMM)"""
-    moderator_id = _require_editor_or_smm(request)
+    _require_editor_or_smm(request)
 
     conn = get_db_connection()
     try:
@@ -489,7 +521,8 @@ async def get_pending_posts(request: Request):
 @router.post("/api/posts/{post_id}/moderate")
 async def moderate_post(request: Request, post_id: int, action: str = Form(...)):
     """Модерация поста: approve (одобрить) или reject (отклонить)"""
-    moderator_id = _require_editor_or_smm(request)
+    moderator = _require_editor_or_smm(request)
+    moderator_id = int(moderator["id"])
 
     if action not in ("approve", "reject"):
         raise HTTPException(status_code=400, detail="Invalid action")
@@ -550,7 +583,8 @@ async def moderate_post(request: Request, post_id: int, action: str = Form(...))
 @router.post("/api/posts/{post_id}/schedule")
 async def schedule_post(request: Request, post_id: int, delay_at: str = Form(...)):
     """Отложенная публикация поста"""
-    moderator_id = _require_editor_or_smm(request)
+    moderator = _require_editor_or_smm(request)
+    moderator_id = int(moderator["id"])
 
     try:
         dt = datetime.fromisoformat(delay_at)
@@ -593,7 +627,7 @@ async def schedule_post(request: Request, post_id: int, delay_at: str = Form(...
 @router.get("/api/posts/my")
 async def get_my_posts(request: Request, limit: int = 10, offset: int = 0):
     """Получить посты текущего пользователя"""
-    user_id, role = _require_authenticated_user(request)
+    user_id, role = _require_authenticated_user_id_and_role(request)
 
     conn = get_db_connection()
     try:
@@ -647,7 +681,7 @@ async def get_my_posts(request: Request, limit: int = 10, offset: int = 0):
 @router.get("/api/user/points")
 async def get_user_points(request: Request):
     """Получить баллы текущего пользователя"""
-    user_id, role = _require_authenticated_user(request)
+    user_id, role = _require_authenticated_user_id_and_role(request)
 
     conn = get_db_connection()
     try:
@@ -667,7 +701,7 @@ async def get_user_points(request: Request):
 @router.get("/api/user/ranking")
 async def get_user_ranking(request: Request):
     """Получить место пользователя в рейтинге волонтеров"""
-    user_id, role = _require_authenticated_user(request)
+    user_id, role = _require_authenticated_user_id_and_role(request)
 
     conn = get_db_connection()
     try:

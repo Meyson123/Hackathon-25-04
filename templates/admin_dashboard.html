@@ -365,6 +365,39 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- VK Analytics -->
+        <div class="table-card" id="vkAnalyticsCard" style="display:none;">
+            <div class="table-header" style="gap: 12px; flex-wrap: wrap;">
+                <h3 class="table-title">VK аналитика</h3>
+                <div style="display:flex; gap: 10px; align-items:center; flex-wrap: wrap;">
+                    <div id="vkSummary" style="color: rgba(255,255,255,0.85); font-size: 13px;"></div>
+                    <button class="dashboard-btn secondary" onclick="collectVkStats()" id="vkCollectBtn">
+                        <i class="bx bx-refresh"></i> Обновить
+                    </button>
+                </div>
+            </div>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Пост</th>
+                        <th>Просмотры</th>
+                        <th>Лайки</th>
+                        <th>Комментарии</th>
+                        <th>Репосты</th>
+                        <th>ER %</th>
+                        <th>Снято</th>
+                    </tr>
+                </thead>
+                <tbody id="vkPostsTable">
+                    <tr>
+                        <td colspan="7" class="loading">
+                            <i class="bx bx-loader-alt"></i> Загрузка...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -372,6 +405,120 @@
         let postsChart = null;
         let currentData = null;
         let currentView = 'users';
+
+        function _fmtNum(v) {
+            const n = Number(v);
+            if (!Number.isFinite(n)) return '-';
+            return n.toLocaleString('ru-RU');
+        }
+
+        function _fmtEr(v) {
+            if (v === null || v === undefined || v === '') return '-';
+            const n = Number(v);
+            if (!Number.isFinite(n)) return '-';
+            return `${n.toFixed(2)}%`;
+        }
+
+        function _fmtDt(v) {
+            if (!v) return '-';
+            const d = new Date(v);
+            if (isNaN(d.getTime())) return String(v);
+            return d.toLocaleString('ru-RU');
+        }
+
+        async function loadVkAnalytics() {
+            const user = window.userData || null;
+            const canVk = !!(user && (user.role === 'admin' || user.role === 'smm'));
+            const card = document.getElementById('vkAnalyticsCard');
+            if (!card || !canVk) return;
+            card.style.display = '';
+
+            try {
+                const [summaryResp, postsResp] = await Promise.all([
+                    fetch('/api/vk/stats/summary?days=7', { credentials: 'same-origin' }),
+                    fetch('/api/vk/stats/posts?limit=20&offset=0', { credentials: 'same-origin' }),
+                ]);
+
+                const summaryData = await summaryResp.json().catch(() => null);
+                const postsData = await postsResp.json().catch(() => null);
+
+                if (!summaryResp.ok || !summaryData || !summaryData.ok) {
+                    document.getElementById('vkSummary').innerText = 'Нет данных VK (проверьте настройку токена/группы).';
+                } else {
+                    const s = summaryData.summary || {};
+                    document.getElementById('vkSummary').innerText =
+                        `7 дней: постов ${_fmtNum(s.posts)}, просмотры ${_fmtNum(s.views)}, лайки ${_fmtNum(s.reactions)}, ` +
+                        `комм. ${_fmtNum(s.comments)}, репосты ${_fmtNum(s.shares)}, средний ER ${_fmtEr(s.avg_er)}`;
+                }
+
+                const tbody = document.getElementById('vkPostsTable');
+                if (!tbody) return;
+
+                const items = (postsData && postsData.items) ? postsData.items : [];
+                if (!postsResp.ok || !postsData || !postsData.ok) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding: 20px; color: rgba(255,255,255,0.7);">
+                                Не удалось загрузить список постов VK
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                if (!items.length) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding: 20px; color: rgba(255,255,255,0.7);">
+                                Пока нет VK-публикаций или ещё не собрана статистика
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = items.map(it => `
+                    <tr>
+                        <td>${(it.title || `Post #${it.local_post_id || '-'}`).toString().slice(0, 60)}</td>
+                        <td>${_fmtNum(it.views)}</td>
+                        <td>${_fmtNum(it.reactions)}</td>
+                        <td>${_fmtNum(it.comments)}</td>
+                        <td>${_fmtNum(it.shares)}</td>
+                        <td>${_fmtEr(it.engagement_rate)}</td>
+                        <td>${_fmtDt(it.collected_at)}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                const summary = document.getElementById('vkSummary');
+                if (summary) summary.innerText = 'Ошибка загрузки VK аналитики';
+            }
+        }
+
+        async function collectVkStats() {
+            const btn = document.getElementById('vkCollectBtn');
+            const original = btn ? btn.innerHTML : null;
+            try {
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bx bx-loader-alt"></i> Обновление...'; }
+                const resp = await fetch('/api/vk/stats/collect?limit=50&lookback_days=14&mock=1&mock_lo=0&mock_hi=10', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                const text = await resp.text();
+                const data = (() => { try { return JSON.parse(text); } catch (e) { return null; } })();
+                if (!resp.ok || !data || !data.ok) {
+                    const msg = (data && (data.detail || data.error)) || text || `Не удалось обновить VK статистику (HTTP ${resp.status})`;
+                    alert(msg);
+                    return;
+                }
+                await loadVkAnalytics();
+            } catch (e) {
+                console.error(e);
+                alert('Ошибка соединения при обновлении VK статистики');
+            } finally {
+                if (btn && original !== null) { btn.disabled = false; btn.innerHTML = original; }
+            }
+        }
 
         // Загрузка статистики
         async function loadStats() {
@@ -828,15 +975,15 @@
                     <td>${new Date(user.created_at).toLocaleDateString('ru-RU')}</td>
                     <td>
                         <div style="display: flex; gap: 8px;">
-                            <button class="action-btn" onclick="alert('Редактирование пользователя: ${user.username}')" title="Редактировать">
+                            <button class="action-btn" onclick="openUserEdit('${user.username}')" title="Редактировать">
                                 <i class="bx bx-edit"></i>
                             </button>
                             ${user.status === 'pending' ? `
-                                <button class="action-btn approve" onclick="alert('Подтверждение пользователя: ${user.username}')" title="Подтвердить">
+                                <button class="action-btn approve" onclick="quickUserStatus('${user.username}', 'active')" title="Подтвердить">
                                     <i class="bx bx-check"></i>
                                 </button>
                             ` : ''}
-                            <button class="action-btn reject" onclick="alert('Блокировка пользователя: ${user.username}')" title="Заблокировать">
+                            <button class="action-btn reject" onclick="quickUserStatus('${user.username}', 'blocked')" title="Заблокировать">
                                 <i class="bx bx-block"></i>
                             </button>
                         </div>
@@ -921,7 +1068,175 @@
         }
 
         // Загрузка при старте
-        document.addEventListener('DOMContentLoaded', loadStats);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadVkAnalytics();
+        });
+    </script>
+
+    <!-- User edit modal -->
+    <div id="userEditModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 560px;">
+            <div class="modal-header">
+                <h2 id="userEditTitle">Редактирование пользователя</h2>
+                <span class="close-modal" id="closeUserEditModal">&times;</span>
+            </div>
+            <form id="userEditForm">
+                <input type="hidden" id="editUsername" />
+
+                <div class="form-group">
+                    <label>Username</label>
+                    <input id="editUsernameReadonly" type="text" disabled />
+                </div>
+
+                <div class="form-group">
+                    <label for="editEmail">Email</label>
+                    <input id="editEmail" type="email" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="editFullName">ФИО</label>
+                    <input id="editFullName" type="text" placeholder="Необязательно" />
+                </div>
+
+                <div class="form-group">
+                    <label for="editRole">Роль</label>
+                    <select id="editRole" class="dashboard-select" style="width: 100%;">
+                        <option value="admin">admin</option>
+                        <option value="smm">smm</option>
+                        <option value="editor">editor</option>
+                        <option value="observer">observer</option>
+                        <option value="volunteer">volunteer</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editStatus">Статус</label>
+                    <select id="editStatus" class="dashboard-select" style="width: 100%;">
+                        <option value="active">active</option>
+                        <option value="pending">pending</option>
+                        <option value="blocked">blocked</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="dashboard-btn" style="width: 100%; justify-content: center;">
+                    Сохранить
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const userEditModal = document.getElementById('userEditModal');
+        const closeUserEditModalBtn = document.getElementById('closeUserEditModal');
+        const userEditForm = document.getElementById('userEditForm');
+
+        function showUserEditModal() {
+            if (userEditModal) userEditModal.style.display = 'flex';
+        }
+
+        function hideUserEditModal() {
+            if (userEditModal) userEditModal.style.display = 'none';
+        }
+
+        if (closeUserEditModalBtn) closeUserEditModalBtn.onclick = hideUserEditModal;
+
+        // Close on outside click (do not override existing handlers if any)
+        window.addEventListener('click', (event) => {
+            if (event.target === userEditModal) hideUserEditModal();
+        });
+
+        async function openUserEdit(username) {
+            try {
+                const resp = await fetch(`/lc/admin/users/${encodeURIComponent(username)}`, {
+                    credentials: 'same-origin'
+                });
+                const data = await resp.json().catch(() => null);
+                if (!resp.ok || !data || !data.ok) {
+                    const msg = (data && (data.detail || data.error)) || 'Не удалось загрузить пользователя';
+                    alert(msg);
+                    return;
+                }
+
+                const u = data.user;
+                document.getElementById('userEditTitle').innerText = `Редактирование пользователя: ${u.username}`;
+                document.getElementById('editUsername').value = u.username;
+                document.getElementById('editUsernameReadonly').value = u.username;
+                document.getElementById('editEmail').value = u.email || '';
+                document.getElementById('editFullName').value = u.full_name || '';
+                document.getElementById('editRole').value = u.role || 'volunteer';
+                document.getElementById('editStatus').value = u.status || 'pending';
+
+                showUserEditModal();
+            } catch (e) {
+                console.error(e);
+                alert('Ошибка соединения при загрузке пользователя');
+            }
+        }
+
+        async function quickUserStatus(username, status) {
+            try {
+                const resp = await fetch(`/lc/admin/users/${encodeURIComponent(username)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status }),
+                    credentials: 'same-origin'
+                });
+                const data = await resp.json().catch(() => null);
+                if (!resp.ok || !data || !data.ok) {
+                    const msg = (data && (data.detail || data.error)) || 'Не удалось обновить пользователя';
+                    alert(msg);
+                    return;
+                }
+                // refresh visible data
+                loadStats();
+            } catch (e) {
+                console.error(e);
+                alert('Ошибка соединения при обновлении пользователя');
+            }
+        }
+
+        if (userEditForm) {
+            userEditForm.onsubmit = async (e) => {
+                e.preventDefault();
+
+                const username = document.getElementById('editUsername').value;
+                const payload = {
+                    email: document.getElementById('editEmail').value,
+                    full_name: document.getElementById('editFullName').value,
+                    role: document.getElementById('editRole').value,
+                    status: document.getElementById('editStatus').value,
+                };
+
+                const submitBtn = userEditForm.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerText;
+                submitBtn.innerText = 'Сохранение...';
+                submitBtn.disabled = true;
+
+                try {
+                    const resp = await fetch(`/lc/admin/users/${encodeURIComponent(username)}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => null);
+                    if (!resp.ok || !data || !data.ok) {
+                        const msg = (data && (data.detail || data.error)) || 'Не удалось сохранить';
+                        alert(msg);
+                        return;
+                    }
+                    hideUserEditModal();
+                    loadStats();
+                } catch (err) {
+                    console.error(err);
+                    alert('Ошибка соединения при сохранении');
+                } finally {
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
+                }
+            };
+        }
     </script>
     <script src="/static/script.js"></script>
 </body>

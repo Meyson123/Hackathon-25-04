@@ -9,6 +9,7 @@ import sqlite3
 import os
 from datetime import datetime
 import pickle
+import calendar
 
 # Google OAuth imports
 from google_auth_oauthlib.flow import Flow
@@ -68,12 +69,29 @@ async def get_events_for_month(year: int, month: int):
     if month < 1 or month > 12:
         raise HTTPException(status_code=400, detail="Месяц должен быть от 1 до 12")
     
+    conn = get_db_connection()
     try:
-        sync = GoogleCalendarSync(DB_PATH)
-        events = sync.get_events_for_month(year, month)
-        return events
+        last_day = calendar.monthrange(year, month)[1]
+        start_date = f"{year:04d}-{month:02d}-01"
+        end_date = f"{year:04d}-{month:02d}-{last_day:02d}"
+
+        # В БД start_datetime может быть как "YYYY-MM-DD HH:MM:SS", так и ISO ("YYYY-MM-DDTHH:MM:SSZ").
+        # SQLite date(...) корректно вытаскивает дату из обоих форматов.
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM events
+            WHERE date(start_datetime) >= date(?)
+              AND date(start_datetime) <= date(?)
+            ORDER BY start_datetime
+            """,
+            (start_date, end_date),
+        ).fetchall()
+        return [dict(r) for r in rows]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при получении мероприятий: {str(e)}")
+    finally:
+        conn.close()
 
 
 @router.get("/api/events/date/{date}", response_model=List[EventResponse])
@@ -93,12 +111,22 @@ async def get_events_for_date(date: str):
     except ValueError:
         raise HTTPException(status_code=400, detail="Неверный формат даты. Используйте YYYY-MM-DD")
     
+    conn = get_db_connection()
     try:
-        sync = GoogleCalendarSync(DB_PATH)
-        events = sync.get_events_for_date(date)
-        return events
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM events
+            WHERE date(start_datetime) = date(?)
+            ORDER BY start_datetime
+            """,
+            (date,),
+        ).fetchall()
+        return [dict(r) for r in rows]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при получении мероприятий: {str(e)}")
+    finally:
+        conn.close()
 
 
 @router.get("/api/events/upcoming", response_model=List[EventResponse])

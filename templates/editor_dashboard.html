@@ -478,6 +478,41 @@
                 <canvas id="engagementAreaChart" height="250"></canvas>
             </div>
         </div>
+
+        <!-- VK Analytics (SMM/Admin only) -->
+        <div class="charts-grid" id="vkAnalyticsCard" style="display:none;">
+            <div class="chart-card">
+                <div style="display:flex; justify-content: space-between; align-items:center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+                    <h4 class="chart-title" style="margin: 0;">VK аналитика</h4>
+                    <div style="display:flex; gap: 10px; align-items:center; flex-wrap: wrap;">
+                        <div id="vkSummary" style="color: rgba(255,255,255,0.85); font-size: 13px;"></div>
+                        <button class="dashboard-btn" type="button" id="vkCollectBtn" onclick="collectVkStats()" style="background: rgba(255,255,255,0.12);">
+                            <i class="bx bx-refresh"></i> Обновить
+                        </button>
+                    </div>
+                </div>
+                <table class="moderation-table">
+                    <thead>
+                        <tr>
+                            <th>Пост</th>
+                            <th>Просмотры</th>
+                            <th>Лайки</th>
+                            <th>Комментарии</th>
+                            <th>Репосты</th>
+                            <th>ER %</th>
+                            <th>Снято</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vkPostsTable">
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding: 20px; color: rgba(255,255,255,0.7);">
+                                Загрузка...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Modal for Creating Post (SMM) -->
@@ -524,6 +559,10 @@
                         <input type="file" id="postFile" name="photo" accept="image/*">
                     </div>
                     <img id="imagePreview" src="#" alt="Предпросмотр">
+                </div>
+                <div id="postToVkRow" class="form-group" style="display: none; align-items: center; gap: 10px; margin-bottom: 15px;">
+                    <input type="checkbox" id="postToVk" name="post_to_vk" style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="postToVk" style="margin-bottom: 0; cursor: pointer;">Постить в ВК</label>
                 </div>
                 <button type="submit" class="dashboard-btn" style="width: 100%; justify-content: center;">
                     Опубликовать пост
@@ -644,11 +683,16 @@
                         setTimeout(() => { toast.className = 'toast'; setTimeout(() => toast.remove(), 500); }, 3000);
                     }, 300);
                 } else {
-                    alert('Ошибка при модерации поста');
+                    let msg = 'Ошибка при модерации поста';
+                    try {
+                        const data = await response.json();
+                        msg = (data && (data.detail || data.error)) || msg;
+                    } catch (e) {}
+                    alert(msg);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Произошла ошибка при соединении с сервером');
+                alert(error && error.message ? error.message : 'Произошла ошибка при соединении с сервером');
             }
         }
 
@@ -711,6 +755,124 @@
             }
         }
 
+        function _fmtNum(v) {
+            const n = Number(v);
+            if (!Number.isFinite(n)) return '-';
+            return n.toLocaleString('ru-RU');
+        }
+
+        function _fmtEr(v) {
+            if (v === null || v === undefined || v === '') return '-';
+            const n = Number(v);
+            if (!Number.isFinite(n)) return '-';
+            return `${n.toFixed(2)}%`;
+        }
+
+        function _fmtDt(v) {
+            if (!v) return '-';
+            const d = new Date(v);
+            if (isNaN(d.getTime())) return String(v);
+            return d.toLocaleString('ru-RU');
+        }
+
+        async function loadVkAnalytics() {
+            const user = window.userData || null;
+            const canVk = !!(user && (user.role === 'smm' || user.role === 'admin'));
+            const card = document.getElementById('vkAnalyticsCard');
+            if (!card || !canVk) return;
+            card.style.display = '';
+
+            try {
+                const [summaryResp, postsResp] = await Promise.all([
+                    fetch('/api/vk/stats/summary?days=7', { credentials: 'same-origin' }),
+                    fetch('/api/vk/stats/posts?limit=20&offset=0', { credentials: 'same-origin' }),
+                ]);
+
+                const summaryData = await summaryResp.json().catch(() => null);
+                const postsData = await postsResp.json().catch(() => null);
+
+                if (!summaryResp.ok || !summaryData || !summaryData.ok) {
+                    const s = document.getElementById('vkSummary');
+                    if (s) s.innerText = 'Нет данных VK (проверьте настройку токена/группы).';
+                } else {
+                    const s = summaryData.summary || {};
+                    const el = document.getElementById('vkSummary');
+                    if (el) {
+                        el.innerText =
+                            `7 дней: постов ${_fmtNum(s.posts)}, просмотры ${_fmtNum(s.views)}, лайки ${_fmtNum(s.reactions)}, ` +
+                            `комм. ${_fmtNum(s.comments)}, репосты ${_fmtNum(s.shares)}, средний ER ${_fmtEr(s.avg_er)}`;
+                    }
+                }
+
+                const tbody = document.getElementById('vkPostsTable');
+                if (!tbody) return;
+                const items = (postsData && postsData.items) ? postsData.items : [];
+
+                if (!postsResp.ok || !postsData || !postsData.ok) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding: 20px; color: rgba(255,255,255,0.7);">
+                                Не удалось загрузить список постов VK
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                if (!items.length) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding: 20px; color: rgba(255,255,255,0.7);">
+                                Пока нет VK-публикаций или ещё не собрана статистика
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = items.map(it => `
+                    <tr>
+                        <td>${(it.title || `Post #${it.local_post_id || '-'}`).toString().slice(0, 60)}</td>
+                        <td>${_fmtNum(it.views)}</td>
+                        <td>${_fmtNum(it.reactions)}</td>
+                        <td>${_fmtNum(it.comments)}</td>
+                        <td>${_fmtNum(it.shares)}</td>
+                        <td>${_fmtEr(it.engagement_rate)}</td>
+                        <td>${_fmtDt(it.collected_at)}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                const s = document.getElementById('vkSummary');
+                if (s) s.innerText = 'Ошибка загрузки VK аналитики';
+            }
+        }
+
+        async function collectVkStats() {
+            const btn = document.getElementById('vkCollectBtn');
+            const original = btn ? btn.innerHTML : null;
+            try {
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bx bx-loader-alt"></i> Обновление...'; }
+                const resp = await fetch('/api/vk/stats/collect?limit=50&lookback_days=14&mock=1&mock_lo=0&mock_hi=10', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                const text = await resp.text();
+                const data = (() => { try { return JSON.parse(text); } catch (e) { return null; } })();
+                if (!resp.ok || !data || !data.ok) {
+                    const msg = (data && (data.detail || data.error)) || text || `Не удалось обновить VK статистику (HTTP ${resp.status})`;
+                    alert(msg);
+                    return;
+                }
+                await loadVkAnalytics();
+            } catch (e) {
+                console.error(e);
+                alert('Ошибка соединения при обновлении VK статистики');
+            } finally {
+                if (btn && original !== null) { btn.disabled = false; btn.innerHTML = original; }
+            }
+        }
+
         function updateAllCharts() {
             const range = document.getElementById('timeRange').value;
             const multiplier = range === 'day' ? 0.5 : (range === 'month' ? 2.5 : 1);
@@ -735,6 +897,54 @@
 
             // Загружаем посты на модерации
             loadPendingPosts();
+
+            // VK analytics (SMM/Admin)
+            loadVkAnalytics();
+
+            // VK posting toggle (only SMM/Admin, and only for immediate publish)
+            try {
+                const postToVkRow = document.getElementById('postToVkRow');
+                const postToVk = document.getElementById('postToVk');
+                const publishLater = document.getElementById('publishLater');
+                const publishDate = document.getElementById('publishDate');
+
+                const user = window.userData || null;
+                const canVk = !!(user && (user.role === 'smm' || user.role === 'admin'));
+                if (postToVkRow && canVk) postToVkRow.style.display = 'flex';
+
+                // Hide/disable VK toggle if server-side VK config is missing
+                (async () => {
+                    if (!canVk || !postToVkRow || !postToVk) return;
+                    try {
+                        const r = await fetch('/api/vk/config', { credentials: 'same-origin' });
+                        const data = await r.json().catch(() => null);
+                        if (!r.ok || !data || !data.ok) return;
+                        if (!data.configured) {
+                            postToVk.checked = false;
+                            postToVk.disabled = true;
+                            postToVkRow.style.opacity = '0.6';
+                            const missing = Array.isArray(data.missing) ? data.missing.join(', ') : 'VK_ACCESS_TOKEN, VK_OWNER_ID';
+                            const label = postToVkRow.querySelector('label[for="postToVk"]');
+                            if (label) label.textContent = `Постить в ВК (не настроено: ${missing})`;
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                })();
+
+                const syncVkDisabled = () => {
+                    if (!postToVk || !postToVkRow) return;
+                    const isScheduled = !!(publishLater && publishLater.checked) || !!(publishDate && publishDate.value);
+                    postToVk.disabled = isScheduled;
+                    if (isScheduled) postToVk.checked = false;
+                    postToVkRow.style.opacity = isScheduled ? '0.5' : '1';
+                };
+                if (publishLater) publishLater.addEventListener('change', syncVkDisabled);
+                if (publishDate) publishDate.addEventListener('change', syncVkDisabled);
+                syncVkDisabled();
+            } catch (e) {
+                console.error('VK checkbox init failed', e);
+            }
 
             // Глобальные настройки для белого текста в Chart.js
             Chart.defaults.color = '#ffffff';
@@ -830,9 +1040,12 @@
             const delayForm = document.getElementById('delayPostForm');
 
             // Open/Close Post Modal
+            // Важно: не переопределяем const-функцию ниже (это ломает весь скрипт и submit).
             const openPostModalHandler = () => {
                 console.log('Opening post modal');
                 postModal.style.display = 'flex';
+                // Теги могут отсутствовать в разметке — в этом случае просто пропускаем.
+                loadTags();
             };
             
             if (openPostBtn) {
@@ -890,6 +1103,7 @@
                     const selectedTags = new Set();
 
                     if (data.tags) {
+                        if (!tagsContainer || !selectedTagsInput) return;
                         tagsContainer.innerHTML = '';
                         data.tags.forEach(tag => {
                             const tagElement = document.createElement('div');
@@ -943,13 +1157,6 @@
                 }
             }
 
-            // Загружаем теги при открытии модального окна
-            const originalOpenPostModalHandler = openPostModalHandler;
-            openPostModalHandler = function() {
-                originalOpenPostModalHandler();
-                loadTags();
-            };
-
             // Проверка похожих постов при вводе текста
             let checkSimilarTimeout;
             const postText = document.getElementById('postText');
@@ -969,7 +1176,15 @@
 
                     checkSimilarTimeout = setTimeout(async function() {
                         try {
-                            const response = await fetch(`/api/posts/check-similar?text=${encodeURIComponent(text)}`);
+                            const response = await fetch(`/api/posts/check-similar?text=${encodeURIComponent(text)}`, {
+                                credentials: 'same-origin'
+                            });
+                            if (!response.ok) {
+                                // Не показываем "уникален", если сервер вернул ошибку (например, 401).
+                                similarPostsWarning.style.display = 'none';
+                                uniquePostSuccess.style.display = 'none';
+                                return;
+                            }
                             const data = await response.json();
 
                             if (data.similar_posts && data.similar_posts.length > 0) {
@@ -991,6 +1206,8 @@
                             }
                         } catch (error) {
                             console.error('Error checking similar posts:', error);
+                            similarPostsWarning.style.display = 'none';
+                            uniquePostSuccess.style.display = 'none';
                         }
                     }, 800); // Задержка 800мс перед проверкой
                 });

@@ -20,7 +20,7 @@
 
     <!-- 2-5. Ссылки -->
     <nav class="header-nav">
-        <a href="javascript:void(0)" class="nav-link" onclick="document.querySelector('.calendar-section').scrollIntoView({ behavior: 'smooth' })">Мероприятия</a>
+        <a href="javascript:void(0)" class="nav-link" onclick="document.querySelector('.calendar-section').scrollIntoView({ behavior: 'smooth' })">События</a>
         <a href="#" class="nav-link">Присоединяйся</a>
         <a href="#" class="nav-link">О нас</a>
     </nav>
@@ -118,6 +118,50 @@
                 </div>
                 <button class="carousel-btn next" id="newsNextBtn"><i class='bx bx-chevron-right'></i></button>            </div>
         </div>
+
+        <!-- Google Sheets (контент-план/данные) -->
+        {% if sheet_error %}
+            <div class="news-feed-section" style="margin-top: 24px;">
+                <h2 class="section-title">Данные из Google Таблицы</h2>
+                <div class="news-carousel-container">
+                    <div class="news-card" style="width: 100%;">
+                        <div class="news-header">
+                            <h3 class="news-title">Интеграция недоступна</h3>
+                            <span class="news-date">—</span>
+                        </div>
+                        <p class="news-desc" style="opacity: 0.8;">{{ sheet_error }}</p>
+                    </div>
+                </div>
+            </div>
+        {% elif sheet_rows and sheet_rows|length > 0 %}
+            <div class="news-feed-section" style="margin-top: 24px;">
+                <h2 class="section-title">Данные из Google Таблицы</h2>
+                <div class="news-carousel-container">
+                    <div class="news-card" style="width: 100%; overflow: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            {% if sheet_headers and sheet_headers|length > 0 %}
+                                <thead>
+                                    <tr>
+                                        {% for h in sheet_headers %}
+                                            <th style="text-align: left; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.85); white-space: nowrap;">{{ h }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                            {% endif %}
+                            <tbody>
+                                {% for row in sheet_rows %}
+                                    <tr>
+                                        {% for cell in row %}
+                                            <td style="padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.75); white-space: nowrap;">{{ cell }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
     </div>
     <script src="/static/script.js"></script>
     </body>
