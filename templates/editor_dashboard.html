@@ -496,8 +496,19 @@
                             <i class="bx bx-magic-wand"></i> Редактировать с ИИ
                         </button>
                     </div>
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                    <div id="similarPostsWarning" style="display: none; margin-top: 15px; padding: 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <i class="bx bx-error" style="color: #ef4444; font-size: 20px;"></i>
+                            <span style="color: #ef4444; font-weight: 600;">Найдены похожие посты!</span>
+                        </div>
+                        <div id="similarPostsList" style="color: rgba(255,255,255,0.8); font-size: 13px;"></div>
+                    </div>
+                    <div id="uniquePostSuccess" style="display: none; margin-top: 15px; padding: 12px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="bx bx-check-circle" style="color: #22c55e; font-size: 20px;"></i>
+                            <span style="color: #22c55e; font-weight: 600;">Пост уникален! Похожих публикаций не найдено.</span>
+                        </div>
+                    </div>                </div>                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                     <input type="checkbox" id="publishLater" style="width: 18px; height: 18px; cursor: pointer;">
                     <label for="publishLater" style="margin-bottom: 0; cursor: pointer;">Опубликовать позже</label>
                 </div>
@@ -939,9 +950,53 @@
                 loadTags();
             };
 
+            // Проверка похожих постов при вводе текста
+            let checkSimilarTimeout;
+            const postText = document.getElementById('postText');
+            const similarPostsWarning = document.getElementById('similarPostsWarning');
+            const similarPostsList = document.getElementById('similarPostsList');
+            const uniquePostSuccess = document.getElementById('uniquePostSuccess');
+            if (postText) {
+                postText.addEventListener('input', function() {
+                    clearTimeout(checkSimilarTimeout);
+                    const text = this.value.trim();
+
+                    if (text.length < 50) {
+                        similarPostsWarning.style.display = 'none';
+                        uniquePostSuccess.style.display = 'none';
+                        return;
+                    }
+
+                    checkSimilarTimeout = setTimeout(async function() {
+                        try {
+                            const response = await fetch(`/api/posts/check-similar?text=${encodeURIComponent(text)}`);
+                            const data = await response.json();
+
+                            if (data.similar_posts && data.similar_posts.length > 0) {
+                                similarPostsList.innerHTML = data.similar_posts.map(post => `
+                                    <div style="margin-bottom: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                            <strong>${post.title}</strong>
+                                            <span style="color: #fbbf24;">${post.similarity}% похожести</span>
+                                        </div>
+                                        <div style="font-size: 12px; opacity: 0.7;">${post.content}</div>
+                                        <div style="font-size: 11px; opacity: 0.5; margin-top: 4px;">Создан: ${post.created_at}</div>
+                                    </div>
+                                `).join('');
+                                similarPostsWarning.style.display = 'block';
+                                uniquePostSuccess.style.display = 'none';
+                            } else {
+                                similarPostsWarning.style.display = 'none';
+                                uniquePostSuccess.style.display = 'block';
+                            }
+                        } catch (error) {
+                            console.error('Error checking similar posts:', error);
+                        }
+                    }, 800); // Задержка 800мс перед проверкой
+                });
+            }
             // Submit Post Form
-            postForm.onsubmit = async (e) => {
-                e.preventDefault();
+            postForm.onsubmit = async (e) => {                e.preventDefault();
                 const formData = new FormData(postForm);
                 
                 // Визуальная обратная связь
@@ -964,10 +1019,11 @@
                     alert(data.status === 'published' ? 'Пост опубликован!' : 'Пост запланирован!');
                     postForm.reset();
                     imagePreview.style.display = 'none';
+                    similarPostsWarning.style.display = 'none';
+                    uniquePostSuccess.style.display = 'none';
                     postModal.style.display = 'none';
                     submitBtn.innerText = originalText;
-                    submitBtn.disabled = false;
-                } catch (error) { 
+                    submitBtn.disabled = false;                } catch (error) { 
                     alert(error && error.message ? error.message : 'Ошибка соединения.');
                     submitBtn.innerText = originalText;
                     submitBtn.disabled = false;

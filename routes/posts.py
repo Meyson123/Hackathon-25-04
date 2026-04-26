@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 import httpx
 from pydantic import BaseModel
-
+from difflib import SequenceMatcher
 _ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 router = APIRouter()
@@ -144,9 +144,61 @@ async def _vk_get_current_user_id(*, token: str, v: str) -> int:
     return int(resp[0]["id"])
 
 
+def _find_similar_posts(text: str, threshold: float = 0.7) -> list:
+    """Находит похожие посты по содержимому"""
+    conn = get_db_connection()
+    try:
+        # Получаем все опубликованные посты
+        posts = conn.execute("""
+            SELECT id, title, content, created_at
+            FROM posts
+            WHERE status IN ('published', 'scheduled')
+            ORDER BY created_at DESC
+            LIMIT 50
+        """).fetchall()
+
+        similar_posts = []
+        text_lower = text.lower()
+
+        for post in posts:
+            post_text = (post["content"] or "").lower()
+            if not post_text:
+                continue
+
+            # Сравниваем тексты
+            similarity = SequenceMatcher(None, text_lower, post_text).ratio()
+
+            if similarity >= threshold:
+                similar_posts.append({
+                    "id": post["id"],
+                    "title": post["title"],
+                    "content": post["content"][:200] + "..." if len(post["content"]) > 200 else post["content"],
+                    "similarity": round(similarity * 100, 1),
+                    "created_at": post["created_at"]
+                })
+
+        # Сортируем по схожести
+        similar_posts.sort(key=lambda x: x["similarity"], reverse=True)
+        return similar_posts[:5]  # Возвращаем топ-5 похожих
+    finally:
+        conn.close()
+
+
+@router.get("/api/posts/check-similar")
+async def check_similar_posts(request: Request, text: str):
+    """Проверяет наличие похожих постов"""
+    _require_authenticated(request)
+
+    clean_text = (text or "").strip()
+    if not clean_text:
+        raise HTTPException(status_code=400, detail="Empty text")
+
+    similar = _find_similar_posts(clean_text)
+    return JSONResponse({"similar_posts": similar})
+
+
 @router.post("/api/posts")
-async def create_post(
-    request: Request,
+async def create_post(    request: Request,
     text: str = Form(...),
     publish_at: str | None = Form(None),
     photo: UploadFile | None = File(None),
@@ -705,4 +757,3 @@ async def publish_scheduled_posts():
         return JSONResponse({"ok": True, "id": post_id, "status": status, "vk": vk_result})
     finally:
         conn.close()
-
